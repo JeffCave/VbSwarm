@@ -1,0 +1,183 @@
+<html>
+<head>
+ <title>Swarm Options</title>
+ <style>
+     main{
+         position:fixed;
+         height:3195;
+         width:5325;
+         left:60;
+         top:345;
+     }
+     main > *{
+         position:absolute;
+     }
+ </style>
+</head>
+<body>
+
+<main>
+   <button id="cmdAbout" style="height:435;left:4320;top:2640;width:855;">About</button>
+   <button id="cmdOK" style="height:435;left:3360;top:2640;width:855;">OK</button>
+   <button id="cmdCancel" style="height:435;left:4320;top:2640;width:855;">Cancel</button>
+   <fieldset id="frSize" style="height:735;left:120;top:840;width:5175;" tab='2'>
+      <legend>Bug Size</legend>
+      <input id="txtSize" type="number" name="txtSize" style="height:285;left:4680;top:240;width:375;" tab='6' />
+      Begin ComctlLib.Slider sldSize 
+         Height          =   375
+         Left            =   720
+         TabIndex        =   3
+         Top             =   240
+         Width           =   3255
+         _ExtentX        =   5741
+         _ExtentY        =   661
+         _Version        =   327682
+         OLEDropMode     =   1
+         TickStyle       =   3
+      End
+      Begin VB.Label Label2 
+         Caption         =   "Large"
+         Height          =   255
+         Left            =   4080
+         TabIndex        =   5
+         Top             =   240
+         Width           =   495
+      End
+      Begin VB.Label Label1 
+         Caption         =   "Small"
+         Height          =   255
+         Left            =   120
+         TabIndex        =   4
+         Top             =   240
+         Width           =   495
+      End
+   </fieldset>
+   <fieldset id='frGen'>
+      <legend>General</legend>
+      Height          =   615
+      Left            =   120
+      TabIndex        =   0
+      Top             =   120
+      Width           =   4095
+      Begin VB.CheckBox chkClearScreen 
+         Caption         =   "Clear Screen"
+         Height          =   255
+         Left            =   120
+         TabIndex        =   1
+         Top             =   240
+         Width           =   1215
+      End
+   </fieldset>
+</body>
+
+<script>
+/******************************************************************************
+ * 
+ *****************************************************************************/
+'use strict';
+
+class frmSetup{
+    /*** Form_Load ************************************************************
+    * Load the current screen saver registry settings.
+    **************************************************************************/
+    constructor(engine){
+        this.pDrawClass = null //As Object ' engine.
+        this.PropBag = null; //As Scripting.Dictionary
+        pLoadSettings();
+        
+        if (this.pDrawClass === null){
+            this.DrawClass = engine;
+        }
+        LoadValues();
+    }
+    /*** Form_Load ***********************************************************/
+    
+    
+    
+    /*** set DrawClass ********************************************************
+    *
+    **************************************************************************/
+    set DrawClass(newDraw){
+        this.pDrawClass = newDraw;
+        this.PropBag = pDrawClass.Params;
+    }
+    /*** set DrawClass *******************************************************/
+    
+    
+    
+    /*** chkClearScreen_Click *************************************************
+    * Save the clear screen option.
+    **************************************************************************/
+    chkClearScreen_Click(){
+        PropBag["cls"].Val = chkClearScreen.value == 'checked';
+    }
+    /*** chkClearScreen_Click ************************************************/
+    
+    
+    
+    /*** cmdAbout_Click *******************************************************
+    * Show a Help About dialog.
+    **************************************************************************/
+    cmdAbout_Click(){
+        let sTitle = "Vius.ca > WinSwarm";
+        let sText = [
+                '',
+                "By Jeff Cave",
+                "www.vius.ca",
+                '',
+                "original code by ",
+            ];
+        alert(sTitle + '\n\n' + sText);
+    }
+    /*** cmdAbout_Click ******************************************************/
+    
+    
+    
+    /*** cmdCancel_Click ******************************************************
+    *
+    **************************************************************************/
+    cmdCancel_Click(){
+        //Unload Me
+    }
+    /*** cmdCancel_Click *****************************************************/
+    
+    
+    
+    /*** cmdOK_Click **********************************************************
+    * Save the current screen saver settings.
+    **************************************************************************/
+    cmdOK_Click(){
+      this.pSaveSettings();
+      //Unload Me
+    }
+    /*** cmdOK_Click *********************************************************/
+    
+    
+    
+    /*** sldSize_Scroll *******************************************************
+    * Save the active sprite size.
+    **************************************************************************/
+    sldSize_Scroll(){
+        this.PropBag.TrailLen = sldSize.value;
+        txtSize.Text = PropBag.TrailLen;
+    }
+    /*** sldSize_Scroll ******************************************************/
+    
+    
+    
+    /*** LoadValues ***********************************************************
+    *
+    **************************************************************************/
+    LoadValues(){
+        chkClearScreen.value = (this.PropBag.cls == 1)? 'checked': '';
+        
+        //size slider
+        sldSize.MIN = this.PropBag.TrailLen.MIN;
+        sldSize.MAX = this.PropBag.TrailLen.MAX;
+        sldSize.value = this.PropBag.TrailLen;
+    }
+    /*** LoadValues **********************************************************/
+}
+
+</script>
+</html>
