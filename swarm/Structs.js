@@ -48,3 +48,23 @@ class ResBitmap{
   }
 }
 
+
+class RGB{
+  constructor(red,green,blue){
+    this.red = red;
+    this.green = green;
+    this.blue = blue;
+  }
+  
+  get HexCode(){
+    return [
+        this.red.toString(16),
+        this.green.toString(16),
+        this.blue.toString(16)
+      ].join('');
+  }
+  
+  get HtmlCode(){
+    return "#" + this.HexCode + ';';
+  }
+}
