@@ -49,15 +49,16 @@ from the X Consortium.
 */
 'use strict';
 
-/* global:sBug, global:miscMath */
+/* global sBug, global miscMath, global bugParams, global RGB */
 
 class Swarm{
   
   
-  constructor(){
+  constructor(canvas){
     this.colors = Array(256).fill(0);
     
-    this.win = null; // As Form
+    this.win = canvas; 
+    
     this.xsize = null; // = 0;
     this.ysize = null; // = 0;
     this.xc = null; // = 0;
@@ -65,13 +66,13 @@ class Swarm{
     this.delay = null; // = 0;
     this.maxx = null; // = 0.0;
     this.maxy = null; // = 0.0;
-  
+    
     this.nbugs = 0;
     this.ntargets = 0;
     this.ntotbugs = 0;
-    this.this.trailLen = 0;
+    this.trailLen = 0;
     
-    /* vars dep} //ent on those above */
+    /* vars dependent on those above */
     this.dtInv = 0.0;
     this.halfDtSq = 0.0;
     this.maxVelSq = 0.0;
@@ -115,75 +116,65 @@ class Swarm{
     this.noise            = 0.0;
     this.minVelMultiplier = 0.0;
     
+    this.callDepth = 0;
     
-    //*** Property Variables *******************************************************
-    this.Continue = true; // As Boolean
-    this.Params = {}; //   As Scripting.Dictionary
-    //*** Property Variables *******************************************************
-    
-    this.initVar();
     
     this.good1 = bugParams;
-    this.Params = {};
     this.Continue = true;
+    
     this.CreateParams();
+    this.initVar();
   }
   
   
   
-  /*** initVar **************************************************************
+  /*** initVar ****************************************************************
    * In the 'C' version, there are a lot of variables that are initialized at
    * the same time that they are declared. Since this is not possible in VB, 
    * we call initVar to initialize them when the class is created.
-   **************************************************************************/
+   ***************************************************************************/
   initVar(){
-    this.good1.this.trailLen = Params.this.trailLen;
+    this.good1.trailLen = this.Params.trailLen;
     
     this.goodParams = [];
-    this.goodParams.push(good1);
-    
-    this.bugs = new Array(MAX_BUGS);
-    this.targets = new Array(MAX_TARGETS);
-    this.allbugs = new Array(MAX_TARGETS + MAX_BUGS);
+    this.goodParams.push(this.good1);
     
     this.head = 0;
     this.tail = 0;
     this.colorScheme = -1;
     this.changeProb = 0.08;
     
-    this.dt = good1.dt;
-    this.targetVel = good1.targetVel;
-    this.targetAcc = good1.targetAcc;
-    this.maxVel = good1.maxVel;
-    this.maxAcc = good1.maxAcc;
-    this.noise = good1.noise;
+    this.dt = this.good1.dt;
+    this.targetVel = this.good1.targetVel;
+    this.targetAcc = this.good1.targetAcc;
+    this.maxVel = this.good1.maxVel;
+    this.maxAcc = this.good1.maxAcc;
+    this.noise = this.good1.noise;
     this.minVelMultiplier = 0.5;
     
-    this.grayIndex = new Array(this.MAX_TRAIL_LEN);
-    this.redIndex = new Array(this.MAX_TRAIL_LEN);
-    this.blueIndex = new Array(this.MAX_TRAIL_LEN);
-    this.graySIndex = new Array(this.MAX_TRAIL_LEN);
-    this.redSIndex = new Array(this.MAX_TRAIL_LEN);
-    this.blueSIndex = new Array(this.MAX_TRAIL_LEN);
-    this.randomIndex = new Array(this.MAX_TRAIL_LEN);
+    this.grayIndex = Array(this.MAX_TRAIL_LEN).fill(0);
+    this.redIndex = Array(this.MAX_TRAIL_LEN).fill(0);
+    this.blueIndex = Array(this.MAX_TRAIL_LEN).fill(0);
+    this.graySIndex = Array(this.MAX_TRAIL_LEN).fill(0);
+    this.redSIndex = Array(this.MAX_TRAIL_LEN).fill(0);
+    this.blueSIndex = Array(this.MAX_TRAIL_LEN).fill(0);
+    this.randomIndex = Array(this.MAX_TRAIL_LEN).fill(0);
     
     this.nbugs = -1;
     this.ntargets = -1;
-    this.this.trailLen = -1;
-  
+    this.trailLen = -1;
   }
-  /*** initVar *************************************************************/
   
   
   
   /*** get MAX_TRAIL_LEN ******************************************************
    *
    ***************************************************************************/
-  get MAX_TRAIL_LEN(){ // as Long
-    return this.Params.trailLen.max;
+  get MAX_TRAIL_LEN(){
+    let max = this.Params.trailLen.max;
+    return max;
   }
-  /*** get MAX_TRAIL_LEN *****************************************************/
-  
+
   
   
   get MAX_BUGS     (){ return 50;  }
@@ -199,9 +190,6 @@ class Swarm{
    * Clear the screen of bugs
    ***************************************************************************/
   clearBugs(){
-    try{
-      let b = null; //As bug
-      let i = 0;
       let j = 0;
       let temp = 0;
       
@@ -226,16 +214,11 @@ class Swarm{
         
         this.win.ForeColor = 0;
         this.allbugs.forEach((b)=>{
-            this.win.Line (b.hist[j][0], b.hist[j][1])-(b.hist[temp][0], b.hist[temp][1])
+            this.win.Line (b.hist[j][0], b.hist[j][1])-(b.hist[temp][0], b.hist[temp][1]);
         });
         
         j = temp;
-      } // Wend
-    
-    }
-    catch(e){
-      ReportError(typeof this + ".clearBugs");
-    }
+      }
   }
   /*** clearBugs *************************************************************/
   
@@ -245,17 +228,15 @@ class Swarm{
    *
    ***************************************************************************/
   computeConstants(){
-    this.halfDtSq = Math.sq(dt) * 0.5;
-    this.dtInv = 1 / dt;
-    this.targetVelSq = Math.sq(targetVel);
-    this.maxVelSq = Math.sq(maxVel);
-    this.minVel = maxVel * minVelMultiplier;
-    this.minVelSq = Math.sq(minVel);
+    this.halfDtSq = miscMath.sq(this.dt) * 0.5;
+    this.dtInv = 1 / this.dt;
+    this.targetVelSq = miscMath.sq(this.targetVel);
+    this.maxVelSq = miscMath.sq(this.maxVel);
+    this.minVel = this.maxVel * this.minVelMultiplier;
+    this.minVelSq = miscMath.sq(this.minVel);
   } 
-  /*** computeConstants ******************************************************/
-    
-    
-    
+  
+  
   /*** computeColorIndices **************************************************
    *
    *************************************************************************/
@@ -263,31 +244,30 @@ class Swarm{
     let i = 0;
     
     /* note: colors are used in *reverse* order! */
-    
-    let redSchizoLength = this.trailLen / 4
-    let blueSchizoLength = this.trailLen / 2
+    //let redSchizoLength = this.trailLen / 4;
+    let blueSchizoLength = this.trailLen / 2;
     
     for(i = this.trailLen - 1; i >= 0; i--){
-      let schizo = (i * 16 / this.trailLen) + 0.5;
+      let schizo = Math.floor((i * 16 / this.trailLen) + 0.5);
       //grayscale
-      grayIndex[i] = 4 + i;
-      if (grayIndex[i] > 19) { grayIndex[i] = 19 };
+      this.grayIndex[i] = 4 + i;
+      if (this.grayIndex[i] > 19) { this.grayIndex[i] = 19; }
       //red
-      redIndex[i] = 20 + schizo;
-      if (redIndex[i] > 35) { redIndex[i] = 35}
+      this.redIndex[i] = 20 + schizo;
+      if (this.redIndex[i] > 35) { this.redIndex[i] = 35}
       //blue
-      blueIndex[i] = 36 + schizo;
-      if (blueIndex[i] > 51) { blueIndex[i] = 51}
+      this.blueIndex[i] = 36 + schizo;
+      if (this.blueIndex[i] > 51) { this.blueIndex[i] = 51}
       //grayschizo
-      graySIndex[i] = 4 + schizo;
+      this.graySIndex[i] = 4 + schizo;
       //red schizo
-      redSIndex[i] = 20 + schizo;
-      if (redSIndex[i] > 35) { redSIndex[i] = 35}
+      this.redSIndex[i] = 20 + schizo;
+      if (this.redSIndex[i] > 35) { this.redSIndex[i] = 35}
       //blue schizo
-      blueSIndex[i] = 36 + 16 * ((this.trailLen - 1 - i) % blueSchizoLength) / (blueSchizoLength - 1) + 0.5
-      if (blueSIndex[i] > 51) { blueSIndex[i] = 51 };
+      this.blueSIndex[i] = 36 + 16 * ((this.trailLen - 1 - i) % blueSchizoLength) / (blueSchizoLength - 1) + 0.5;
+      if (this.blueSIndex[i] > 51) { this.blueSIndex[i] = 51; }
       //random
-      randomIndex[i] = 52 + Math.random() * this.numRandomColors;
+      this.randomIndex[i] = 52 + Math.random() * this.numRandomColors;
       //debug.Print i
     }
   } // Sub
@@ -304,28 +284,37 @@ class Swarm{
     let temp = 0;
     let colour = 0;
     
-    if ((head + 1) % (this.trailLen) == tail) {
+    if ((this.head + 1) % (this.trailLen) === this.tail) {
       /* first, erase last segment of bugs if necessary */
-      temp = (tail + 1) % (this.trailLen);
+      temp = (this.tail + 1) % (this.trailLen);
       
-      colour = vbBlack;
-      
-      allbugs.forEach(function(b){
-        win.ForeColor = colour;
-        win.Line (b.hist(tail, 0), b.hist(tail, 1))-(b.hist(temp, 0), b.hist(temp, 1));
+      let ctx = this.win.getContext("2d");
+      colour = new RGB(0,0,0);
+      ctx.strokeStyle = colour.HtmlColor;
+      this.allbugs.forEach(function(b){
+        let tl = b.hist[this.tail];
+        let br = b.hist[temp];
+        ctx.moveTo( tl[0], tl[1] );
+        ctx.lineTo( br[0], br[1] );
+        ctx.stroke();
       });
       
-      this.tail = (this.tail + 1) % (this.trailLen);
-    } // if
+      this.tail = (this.tail + 1) % this.trailLen;
+    }
     
     j = this.tail;
     while (j != this.head){
       temp = (j + 1) % (this.trailLen);
       
-      colour = colors[colorIdx[nc - ci0]];
-      win.ForeColor = colour;
-      allbugs.forEach(function(b) {
-        win.Line (b.hist(j, 0), b.hist(j, 1))-(b.hist(temp, 0), b.hist(temp, 1));
+      colour = this.colors[this.colorIdx[nc - ci0]];
+      let ctx = this.win.getContext("2d");
+      ctx.strokeStyle = colour.HtmlColor;
+      this.allbugs.forEach(function(b) {
+        let tl = b.hist[j];
+        let br = b.hist[temp];
+        ctx.moveTo( tl[0] , tl[1] );
+        ctx.lineTo( br[0] , br[1] );
+        ctx.stroke();
       });
       
       ci0 = (ci0 + 1) % nc;
@@ -345,8 +334,8 @@ class Swarm{
   initBugs(){
     let i = 0;
     
-    this.head = 0
-    this.tail = 0
+    this.head = 0;
+    this.tail = 0;
     
     //*** Test Values ***
     //*
@@ -357,15 +346,18 @@ class Swarm{
     //*** Test Values ***
     
     if (this.ntargets < 0) {
-      this.ntargets = (0.25 + Math.fRand(0.75) * Math.fRand(1)) * (this.MAX_TARGETS - 1) + 1;
+      this.ntargets = (0.25 + miscMath.fRand(0.75) * miscMath.fRand(1)) * (this.MAX_TARGETS - 1) + 1;
+      this.ntargets = Math.floor(this.ntargets);
     }
     if (this.nbugs < 0) {
-      this.nbugs = (0.25 + Math.fRand(0.75) * Math.fRand(1)) * (this.MAX_BUGS - 1) + 1;
-    } // if
+      this.nbugs = (0.25 + miscMath.fRand(0.75) * miscMath.fRand(1)) * (this.MAX_BUGS - 1) + 1;
+      this.nbugs = Math.floor(this.nbugs);
+    }
     if (this.trailLen < 0) {
-      //this.trailLen = (1 - Math.fRand(0.6) * Math.fRand(1)) * MAX_TRAIL_LEN
-      this.trailLen = this.Params.trailLen.Val;
-    } // if
+      //this.trailLen = (1 - miscMath.fRand(0.6) * miscMath.fRand(1)) * MAX_TRAIL_LEN
+      this.trailLen = this.Params.trailLen.val;
+      this.trailLen = Math.floor(this.trailLen);
+    }
     
     if (this.nbugs > this.MAX_BUGS) { this.nbugs = this.MAX_BUGS}
     if (this.ntargets > this.MAX_TARGETS) { this.ntargets = this.MAX_TARGETS}
@@ -374,37 +366,21 @@ class Swarm{
     this.ntotbugs = this.ntargets + this.nbugs;
     
     this.allbugs = [];
-    for(i = 0; i<this.ntotbugs; i++){
-      let b = new sBug();
-      this.allbugs.push(b);
-      if(i < this.nbugs){
-        this.bugs.push(b);
-      }
-    }
     this.bugs = [];
     this.targets = [];
-    for( i = 0; i < this.nbugs; i++){
-      this.bugs.push(this.allbugs[i]);
+    for(i = 0; i<this.ntotbugs; i++){
+      let b = new sBug(this);
+      this.allbugs.push(b);
     }
-    for( i = i; i < this.ntotbugs; i++){
-      this.targets.push(this.allbugs[i]);
-    }
+    this.bugs = this.allbugs.slice(0,this.nbugs);
+    this.targets = this.allbugs.slice(this.nbugs);
     
-    this.allbugs.forEach(function(b,i){
-      b.swarm = this;
-      
-      b.pos[0] = Math.fRand(this.maxx);
-      b.pos[1] = Math.fRand(this.maxy);
-      
-      b.vel[0] = Math.fRand(this.targetVel / 2);
-      b.vel[1] = Math.fRand(this.targetVel / 2);
-      
-      b.hist[this.head][0] = b.pos[0] * this.xsize;
-      b.hist[this.head][1] = b.pos[1] * this.xsize;
-    });
-    
+    let targets = this.targets;
     this.bugs.forEach(function(b,i){
-      b.closest = this.targets[Math.fRand(this.ntargets - 1)];
+      let targ = b.swarm.targets.length - 1;
+      targ *= Math.random();
+      targ = Math.floor(targ);
+      b.closest = targets[targ];
     });
     
   }
@@ -438,7 +414,7 @@ class Swarm{
       if (temp > 255) {
         temp = 255;
       } // if
-      temp = 255 - temp
+      temp = 255 - temp;
       this.colors[n] = new RGB(temp, temp, temp); n++;
     }
     
@@ -469,25 +445,25 @@ class Swarm{
     n = n + 1;
     
     for(i = 0; i < this.numRandomColors; i++){
-      this.colors[n] = new RGB(Math.WrapByte((this.colors[n-3] + (miscMath.fRand() & 31) - 16) & 255), Math.WrapByte((this.colors[n-3] + (Math.fRand & 31) - 16) & 255), this.colors[n] == Math.WrapByte(this.colors[n-2] / (i + 2) + this.colors[n-3] / (i + 2)));
+      this.colors[n] = new RGB(miscMath.WrapByte((this.colors[n-3] + (miscMath.fRand() & 31) - 16) & 255), miscMath.WrapByte((this.colors[n-3] + (miscMath.fRand & 31) - 16) & 255), this.colors[n] == miscMath.WrapByte(this.colors[n-2] / (i + 2) + this.colors[n-3] / (i + 2)));
       n = n + 1;
     }
     
     this.numColors = n;
     
   }
-  /*** InitCMap *******************************************************/
+
   
   
-  
-  /*** initGraphics ****************************************************
+  /**
+   * initGraphics
    *
-   ********************************************************************/
+   */
   initGraphics(){
     this.initCMap();
     
-    this.xsize = this.win.width / this.win.TwipsPerPixelX;
-    this.ysize = this.win.height / this.win.TwipsPerPixelY;
+    this.xsize = this.win.width;
+    this.ysize = this.win.height;
     
     this.xc = this.xsize / 2;
     this.yc = this.ysize / 2;
@@ -496,7 +472,7 @@ class Swarm{
     this.maxy = this.ysize / this.xsize;
     
     if (this.colorScheme < 0) {
-      this.colorScheme = miscMath.fRand(this.NUM_SCHEMES - 1);
+      this.colorScheme = Math.floor(miscMath.fRand(this.NUM_SCHEMES - 1));
     }
     
     return true;
@@ -513,7 +489,7 @@ class Swarm{
     if (which == 0) {
       /* turn bug into target */
       if (this.ntargets < this.MAX_TARGETS - 1 && this.nbugs > this.ntargets) {
-        let i = Math.fRand(this.nbugs - 1);
+        let i = miscMath.fRand(this.nbugs - 1);
         this.targets[this.ntargets] = this.bugs[i];
         this.bugs[i] = this.bugs[this.nbugs-1];
         this.targets[this.ntargets].closest = null;
@@ -543,12 +519,7 @@ class Swarm{
         this.bugs[this.nbugs-1].closest = this.targets[Math.floor(Math.random() * (this.ntargets - 1))];
         
         for(let j = 0; j < this.nbugs; j++){
-          /******
-          * safety check
-          * shouldn//t need the "is nothing" but I had a bug I couldn//t find
-          * fixed now?
-          ******/
-          if (this.bugs[j].closest == null || this.bugs[j].closest == this.bugs[this.nbugs-1]) {
+          if (this.bugs[j].closest == this.bugs[this.nbugs-1]) {
             this.bugs[j].closest = this.targets[Math.random() * (this.ntargets - 1)];
           }
         }
@@ -579,8 +550,8 @@ class Swarm{
    ***************************************************************************/
   pickNewTargets(){
     for(let i = 0; i < this.nbugs; i++){
-      //Set bugs(i).closest = targets(Math.fRand(ntargets - 1))
-      this.bugs[i].closest = this.targets(i % this.ntargets);
+      //Set bugs(i).closest = targets(miscMath.fRand(ntargets - 1))
+      this.bugs[i].closest = this.targets[i % this.ntargets];
     }
   }
   /*** pickNewTargets ********************************************************/
@@ -591,16 +562,10 @@ class Swarm{
    *
    ***************************************************************************/
   randomSmallChange(){
-    let whichcase = 0;
+    if (this.callDepth > 10) return;
+    this.callDepth = (this.callDepth || 0) + 1;
     
-    this.callDepth = this.callDepth + 1;
-    if (this.callDepth > 10) {
-      this.callDepth = this.callDepth - 1;
-      return;
-    }
-    
-    whichcase = Math.random() * 11;
-    
+    let whichcase = Math.random() * 11;
     switch(whichcase){
       case 0:    /* acceleration */
         this.mutateParam(this.maxAcc);
@@ -608,10 +573,10 @@ class Swarm{
       case 1:    /* target acceleration */
         this.mutateParam(this.targetAcc);
         break;
-      case 2:    ///* velocity */
+      case 2:    /* velocity */
         this.mutateParam(this.maxVel);
         break;
-      case 3:    ///* target velocity */
+      case 3:    /* target velocity */
         this.mutateParam(this.targetVel);
         break;
       case 4:    ///* noise */
@@ -714,9 +679,9 @@ class Swarm{
         this.pickNewTargets();
         break;
       default:
-        temp = Math.fRand(this.ntargets - 1);
-        this.targets[temp].pos[0] = this.targets[temp].pos[0] + (Math.fRand(this.maxx / 4) - this.maxx / 8);
-        this.targets[temp].pos[1] = this.targets[temp].pos[1] + (Math.fRand(this.maxy / 4) - this.maxy / 8);
+        temp = miscMath.fRand(this.ntargets - 1);
+        this.targets[temp].pos[0] = this.targets[temp].pos[0] + (miscMath.fRand(this.maxx / 4) - this.maxx / 8);
+        this.targets[temp].pos[1] = this.targets[temp].pos[1] + (miscMath.fRand(this.maxy / 4) - this.maxy / 8);
         ///* updateState() will fix bounds */
         //updateState //will fix bounds
     }
@@ -765,13 +730,13 @@ class Swarm{
     this.computeColorIndices();
     
     if (this.changeProb > 0) {
-      for(i = (this.random() * 5) + 5 ; i >= 0; i--){
+      for(i = (Math.random() * 5) + 5 ; i >= 0; i--){
         this.randomSmallChange();
       }
     }
     
     this.nframes = 0;
-    this.sTime = Date.now();
+    this.sTime = Date.now().getTime();
     
     while (this.sleepCount <= 2 && this.Continue()){
       //DoEvents
@@ -798,10 +763,10 @@ class Swarm{
       this.nframes = this.nframes + 1;
       
       if (eTime > (sTime+500)) {
-        if (Math.fRand(1) < this.changeProb) {
+        if (miscMath.fRand(1) < this.changeProb) {
           this.randomSmallChange();
         } // if
-        if (Math.fRand(1) < this.changeProb * 0.3) {
+        if (miscMath.fRand(1) < this.changeProb * 0.3) {
           this.randomBigChange();
         } // if
         
@@ -919,7 +884,7 @@ class Swarm{
       }
       this.updateState_checkIndex = (this.updateState_checkIndex + 1) % this.nbugs;
     }
-  
+    
     /* update target state */
     for(i = 0; i < this.ntargets; i++){
       b = this.targets[i];
@@ -948,8 +913,8 @@ class Swarm{
       }
       
       /* update position */
-      b.pos[0] += (b.vel[0] * this.dt + ax * this.halfDtSq)
-      b.pos[1] += (b.vel[1] * this.dt + ay * this.halfDtSq)
+      b.pos[0] += (b.vel[0] * this.dt + ax * this.halfDtSq);
+      b.pos[1] += (b.vel[1] * this.dt + ay * this.halfDtSq);
       
       /* check limits on targets */
       if (b.pos[0] < 0) {
@@ -1085,7 +1050,7 @@ class Swarm{
         tnc = this.trailLen;
         colorIdx = this.randomIndex;
         ci0 = this.head;
-        nc = this.trailLen
+        nc = this.trailLen;
         break;
     }
   }
@@ -1097,6 +1062,7 @@ class Swarm{
    *
    ***************************************************************************/
   CreateParams(){
+      this.Params = {};
       this.Params["cls"] = {type:'int',min:0,max:1,val:1};
       this.Params["fps"] = {type:'FLT',min:16,max:150,val:150};
       this.Params["trailLen"] = {type:'INT', min:5, max:60, val:40};
@@ -1104,5 +1070,4 @@ class Swarm{
       this.Params["Targets"]={type:'INT', min:2, max:5, val:5};
       this.Params["vel"]={type:'FLT', min:0, max:1, val:0.03};
   }
-  /*** CreateParams **********************************************************/
 }

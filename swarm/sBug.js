@@ -3,6 +3,8 @@
  *****************************************************************************/
 'use strict';
 
+/* global miscMath */
+
 
 const bugParams = {
     'dt' : 0.3,
@@ -26,11 +28,24 @@ class sBug{
    ***************************************************************************/
   constructor(swarm){
     this.pPos = [0,0];
-    this.pHist = Array(100).map(function(){return Array(2).fill(0);});
+    this.pHist = Array(100)
+      .fill(0)
+      .map(function(){
+        return Array(2).fill(0);
+      });
     this.pVel = [0,0];
     
     this.swarm = swarm;
     this.closest = null;
+    
+    this.pos[0] = miscMath.fRand(this.swarm.xsize);
+    this.pos[1] = miscMath.fRand(this.swarm.ysize);
+    
+    this.vel[0] = miscMath.fRand(this.swarm.targetVel / 2);
+    this.vel[1] = miscMath.fRand(this.swarm.targetVel / 2);
+    
+    this.hist[this.swarm.head] = JSON.parse(JSON.stringify(this.pos));
+    
   }
   
   

@@ -1,6 +1,7 @@
 <html>
 <head>
   <title>frmMain</title>
+  <script src="basMain.js"></script>
   <script src="clsSwarm.js"></script>
   <script src="miscMath.js"></script>
   <script src="sBug.js"></script>
@@ -13,62 +14,13 @@
       left: 0;
       top: 0;
       width:100%;
+      background-color:black;
     }
   </style>
 </head>
 <body>
 <canvas></canvas>
 </body>
-<script>
-'use strict';
-
-class frmMain{
-  
-  
-  /*** set DrawClass **********************************************************
-   *
-   ***************************************************************************/
-  set DrawClass(newDraw){
-    if (this.pDrawClass !== null){
-      this.pDrawClass.Continue = false;
-    }
-    this.pDrawClass = newDraw;
-    if (this.pDrawClass !== null) {
-      this.pDrawClass.Continue = true;
-    }
-  }
-  /*** set DrawClass *********************************************************/
-  
-  
-  
-  /*** constructor ************************************************************
-   *
-   ***************************************************************************/
-  constructor(svg){
-    this.pDrawClass = null; // As Object // engine.
-    
-    this.canvas = svg;
-    // Get the screen saver//s settings from the registry.
-    this.pLoadSettings();
-    // Initialize the desktop image information.
-    this.pInitDeskDC(glDeskDC, gDeskBmp, gDispRec);
-  }
-  /*** Form_Load *************************************************************/
-  
-  
-  /*** Form_Paint ***************************************************************
-   *
-   * Repaint the desktop bitmap to the form.
-   *
-   *****************************************************************************/
-  Form_Paint(){
-    this.pPaintDeskDC(glDeskDC, gDeskBmp, hwnd);
-  }
-  /*** Form_Paint **************************************************************/
-  
-}
-</script>
-
 </html>
 
 
