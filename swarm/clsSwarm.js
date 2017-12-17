@@ -63,9 +63,7 @@ class Swarm{
     this.ysize = null; // = 0;
     this.xc = null; // = 0;
     this.yc = null; // = 0;
-    this.delay = null; // = 0;
-    this.maxx = null; // = 0.0;
-    this.maxy = null; // = 0.0;
+    this.delay = null;
     
     this.nbugs = 0;
     this.ntargets = 0;
@@ -145,6 +143,8 @@ class Swarm{
     this.changeProb = 0.08;
     
     this.dt = this.good1.dt;
+    this.fps = this.good1.dt;
+    this.msPerFrame = 1000/this.fps;
     this.targetVel = this.good1.targetVel;
     this.targetAcc = this.good1.targetAcc;
     this.maxVel = this.good1.maxVel;
@@ -190,20 +190,28 @@ class Swarm{
    * Clear the screen of bugs
    ***************************************************************************/
   clearBugs(){
+      let colour = new RGB(0,0,0);
       let j = 0;
       let temp = 0;
       
       this.tail -= 1;
       if (this.tail < 0) {
-        this.tail = this.this.trailLen - 1;
+        this.tail = this.trailLen - 1;
       } // if
       
       if ((this.head + 1) % (this.trailLen - 1) == this.tail) {
-        this.temp = (this.tail + 1) % this.this.trailLen;
+        this.temp = (this.tail + 1) % this.trailLen;
         
-        this.allbugs.forEach((b)=>{
-          this.win.Line (b.hist[this.tail][ 0], b.hist(this.tail, 1))-(b.hist(temp, 0), b.hist(temp, 1));
+        this.allbugs.forEach(function(b){
+          b.swarm.drawSegment({
+            colour: colour,
+            x1:b.hist[b.swarm.tail][0],
+            y1:b.hist[b.swarm.tail][1],
+            x2:b.hist[temp][0],
+            y2:b.hist[temp][1],
+          });
         });
+        
         
         temp = (this.tail + 1) % (this.trailLen - 1);
       } // if
@@ -212,15 +220,19 @@ class Swarm{
       while (j !== this.head){
         temp = (j + 1) % (this.trailLen);
         
-        this.win.ForeColor = 0;
-        this.allbugs.forEach((b)=>{
-            this.win.Line (b.hist[j][0], b.hist[j][1])-(b.hist[temp][0], b.hist[temp][1]);
+        this.allbugs.forEach(function(b){
+          b.swarm.drawSegment({
+            colour: colour,
+            x1:b.hist[b.swarm.tail][0],
+            y1:b.hist[b.swarm.tail][1],
+            x2:b.hist[temp][0],
+            y2:b.hist[temp][1],
+          });
         });
         
         j = temp;
       }
   }
-  /*** clearBugs *************************************************************/
   
   
   
@@ -270,16 +282,30 @@ class Swarm{
       this.randomIndex[i] = 52 + Math.random() * this.numRandomColors;
       //debug.Print i
     }
-  } // Sub
-  /*** computeColorIndices *************************************************/
+  }
   
   
   
-  /*** drawBugs *************************************************************
+  drawSegment(def){
+      let ctx = this.win.getContext("2d");
+      ctx.beginPath();
+      ctx.strokeStyle = def.colour.HtmlCode;
+      ctx.moveTo( Math.floor(def.x1), Math.floor(def.y1) );
+      ctx.lineTo( Math.floor(def.x2), Math.floor(def.y2) );
+      ctx.stroke();
+      
+  }
+  
+  
+  
+  /**
+   * drawBugs
    *
-   *************************************************************************/
-  drawBugs(tColorIdx, tci0, tnc, colorIdx, ci0, nc){
-    let i = 0;
+   */
+  drawBugs(params){
+    /*
+    tColorIdx, tci0, tnc, colorIdx, ci0, nc
+    */
     let j = 0;
     let temp = 0;
     let colour = 0;
@@ -288,15 +314,15 @@ class Swarm{
       /* first, erase last segment of bugs if necessary */
       temp = (this.tail + 1) % (this.trailLen);
       
-      let ctx = this.win.getContext("2d");
       colour = new RGB(0,0,0);
-      ctx.strokeStyle = colour.HtmlColor;
       this.allbugs.forEach(function(b){
-        let tl = b.hist[this.tail];
-        let br = b.hist[temp];
-        ctx.moveTo( tl[0], tl[1] );
-        ctx.lineTo( br[0], br[1] );
-        ctx.stroke();
+        b.swarm.drawSegment({
+          colour: colour,
+          x1:b.hist[b.swarm.tail][0],
+          y1:b.hist[b.swarm.tail][1],
+          x2:b.hist[temp][0],
+          y2:b.hist[temp][1],
+        });
       });
       
       this.tail = (this.tail + 1) % this.trailLen;
@@ -306,25 +332,24 @@ class Swarm{
     while (j != this.head){
       temp = (j + 1) % (this.trailLen);
       
-      colour = this.colors[this.colorIdx[nc - ci0]];
-      let ctx = this.win.getContext("2d");
-      ctx.strokeStyle = colour.HtmlColor;
+      colour = this.colors[params.tColorIdx[params.nc - params.ci0]];
       this.allbugs.forEach(function(b) {
-        let tl = b.hist[j];
-        let br = b.hist[temp];
-        ctx.moveTo( tl[0] , tl[1] );
-        ctx.lineTo( br[0] , br[1] );
-        ctx.stroke();
+        b.swarm.drawSegment({
+          colour: colour,
+          x1:b.hist[b.swarm.tail][0],
+          y1:b.hist[b.swarm.tail][1],
+          x2:b.hist[temp][0],
+          y2:b.hist[temp][1],
+        });
       });
       
-      ci0 = (ci0 + 1) % nc;
-      tci0 = (tci0 + 1) % tnc;
+      params.ci0 = (params.ci0 + 1) % params.nc;
+      params.tci0 = (params.tci0 + 1) % params.tnc;
       
       j = temp;
       
     }
   }
-  /*** drawBugs ************************************************************/
   
   
   
@@ -346,15 +371,15 @@ class Swarm{
     //*** Test Values ***
     
     if (this.ntargets < 0) {
-      this.ntargets = (0.25 + miscMath.fRand(0.75) * miscMath.fRand(1)) * (this.MAX_TARGETS - 1) + 1;
+      this.ntargets = (0.25 + Math.rand(0.75) * Math.rand(1)) * (this.MAX_TARGETS - 1) + 1;
       this.ntargets = Math.floor(this.ntargets);
     }
     if (this.nbugs < 0) {
-      this.nbugs = (0.25 + miscMath.fRand(0.75) * miscMath.fRand(1)) * (this.MAX_BUGS - 1) + 1;
+      this.nbugs = (0.25 + Math.rand(0.75) * Math.rand(1)) * (this.MAX_BUGS - 1) + 1;
       this.nbugs = Math.floor(this.nbugs);
     }
     if (this.trailLen < 0) {
-      //this.trailLen = (1 - miscMath.fRand(0.6) * miscMath.fRand(1)) * MAX_TRAIL_LEN
+      //this.trailLen = (1 - Math.rand(0.6) * Math.rand(1)) * MAX_TRAIL_LEN
       this.trailLen = this.Params.trailLen.val;
       this.trailLen = Math.floor(this.trailLen);
     }
@@ -384,7 +409,6 @@ class Swarm{
     });
     
   }
-  /*** initBugs *******************************************************/
   
   
   
@@ -441,11 +465,11 @@ class Swarm{
     /* random colors start at 52 */
     this.numRandomColors = this.MAX_TRAIL_LEN;
     
-    this.colors[n] = new RGB(miscMath.WrapByte(Math.random() * 255), miscMath.WrapByte(miscMath.fRand() & 255), miscMath.WrapByte(this.colors[n - 2] / 2 + this.colors[n - 3] / 2));
+    this.colors[n] = new RGB(miscMath.WrapByte(Math.random() * 255), miscMath.WrapByte(Math.rand() & 255), miscMath.WrapByte(this.colors[n - 2] / 2 + this.colors[n - 3] / 2));
     n = n + 1;
     
     for(i = 0; i < this.numRandomColors; i++){
-      this.colors[n] = new RGB(miscMath.WrapByte((this.colors[n-3] + (miscMath.fRand() & 31) - 16) & 255), miscMath.WrapByte((this.colors[n-3] + (miscMath.fRand & 31) - 16) & 255), this.colors[n] == miscMath.WrapByte(this.colors[n-2] / (i + 2) + this.colors[n-3] / (i + 2)));
+      this.colors[n] = new RGB(miscMath.WrapByte((this.colors[n-3] + (Math.rand() & 31) - 16) & 255), miscMath.WrapByte((this.colors[n-3] + (Math.rand & 31) - 16) & 255), this.colors[n] == miscMath.WrapByte(this.colors[n-2] / (i + 2) + this.colors[n-3] / (i + 2)));
       n = n + 1;
     }
     
@@ -468,28 +492,26 @@ class Swarm{
     this.xc = this.xsize / 2;
     this.yc = this.ysize / 2;
     
-    this.maxx = 1;
-    this.maxy = this.ysize / this.xsize;
-    
     if (this.colorScheme < 0) {
-      this.colorScheme = Math.floor(miscMath.fRand(this.NUM_SCHEMES - 1));
+      this.colorScheme = Math.floor(Math.rand(this.NUM_SCHEMES - 1));
     }
     
     return true;
-  } // Function
-  /*** initGraphics ***************************************************/
+  }
   
   
   
-  /*** mutateBug *******************************************************
+  /**
+   * mutateBug
+   * 
    * Mutation is the act of a predator becoming prey, or prey becoming 
    * a predator.
-   ********************************************************************/
+   */
   mutateBug(which){
     if (which == 0) {
       /* turn bug into target */
       if (this.ntargets < this.MAX_TARGETS - 1 && this.nbugs > this.ntargets) {
-        let i = miscMath.fRand(this.nbugs - 1);
+        let i = Math.rand(this.nbugs - 1);
         this.targets[this.ntargets] = this.bugs[i];
         this.bugs[i] = this.bugs[this.nbugs-1];
         this.targets[this.ntargets].closest = null;
@@ -527,20 +549,20 @@ class Swarm{
       }
     }
   }
-  /*** mutateBug ******************************************************/
   
   
   
-  /**** mutateParam ***************************************************
+  /**
+   * mutateParam
+   * 
    * Modifies a parameter by a random, incremental amount. This means that it
    * changes by a random amount, but no more than 25% either way. For example,
    * if the value was 100 it could } // up being any value between 75 and 125.
-   *******************************************************************/
+   */
   mutateParam(Param){
     this.mutateRate = 0.25;
-    this.Param = this.Param * (1 - this.mutateRate + miscMath.fRand(this.mutateRate * 2));
+    this.Param = this.Param * (1 - this.mutateRate + Math.rand(this.mutateRate * 2));
   }
-  /*** mutateParam **************************************************/
   
   
   
@@ -550,11 +572,10 @@ class Swarm{
    ***************************************************************************/
   pickNewTargets(){
     for(let i = 0; i < this.nbugs; i++){
-      //Set bugs(i).closest = targets(miscMath.fRand(ntargets - 1))
+      //Set bugs(i).closest = targets(Math.rand(ntargets - 1))
       this.bugs[i].closest = this.targets[i % this.ntargets];
     }
   }
-  /*** pickNewTargets ********************************************************/
   
   
   
@@ -598,9 +619,9 @@ class Swarm{
         this.mutateBug(0);
         break;
       case 10:   /* color scheme */
-        this.colorScheme = miscMath.fRand(this.NUM_SCHEMES - 1);
+        this.colorScheme = Math.rand(this.NUM_SCHEMES - 1);
         if (this.colorScheme == this.RANDOM_SCHIZO || this.colorScheme == this.COLOR_SCHIZO) {
-          this.colorScheme = miscMath.fRand(this.NUM_SCHEMES - 1);
+          this.colorScheme = Math.rand(this.NUM_SCHEMES - 1);
         } // if
         break;
         
@@ -632,13 +653,13 @@ class Swarm{
     this.callDepth = this.callDepth - 1;
     
   }
-  /*** randomSmallChange *****************************************************/
   
   
   
-  /*** randomBigChange ********************************************************
+  /**
+   * randomBigChange
    *
-   ***************************************************************************/
+   */
   randomBigChange(){
     let whichcase = 0;
     let temp = 0;
@@ -679,39 +700,21 @@ class Swarm{
         this.pickNewTargets();
         break;
       default:
-        temp = miscMath.fRand(this.ntargets - 1);
-        this.targets[temp].pos[0] = this.targets[temp].pos[0] + (miscMath.fRand(this.maxx / 4) - this.maxx / 8);
-        this.targets[temp].pos[1] = this.targets[temp].pos[1] + (miscMath.fRand(this.maxy / 4) - this.maxy / 8);
+        temp = Math.rand(this.ntargets - 1);
+        this.targets[temp].pos[0] = this.targets[temp].pos[0] + (Math.rand(this.maxx / 4) - this.maxx / 8);
+        this.targets[temp].pos[1] = this.targets[temp].pos[1] + (Math.rand(this.maxy / 4) - this.maxy / 8);
         ///* updateState() will fix bounds */
         //updateState //will fix bounds
     }
     
     this.callDepth = this.callDepth - 1;
-  } 
-  /*** randomBigChange *******************************************************/
-  
+  }
   
   
   /*** screenhack *************************************************************
    *
    ***************************************************************************/
   screenhack(w /* as window */){
-    let nframes = 0;
-    let i = 0;
-    let fps = 0.0;
-    let timePerFrame = 0.0;
-    let elapsed = 0.0;
-    let targetColorIndex= []; // as Long
-    let colorIndex= []; // as Long
-    let targetStartColor = 0;
-    let targetNumColors = 0;
-    let startColor = 0;
-    let numColors = 0;
-    let sTime = 0.0;
-    let eTime = 0.0;
-    let cnt = 0;
-    let sleepCount = 0;
-    let delayAccum = 0;
     
     this.initVar();
     
@@ -730,114 +733,75 @@ class Swarm{
     this.computeColorIndices();
     
     if (this.changeProb > 0) {
-      for(i = (Math.random() * 5) + 5 ; i >= 0; i--){
+      for(let i = (Math.random() * 5) + 5 ; i >= 0; i--){
         this.randomSmallChange();
       }
     }
     
-    this.nframes = 0;
-    this.sTime = Date.now().getTime();
     
-    while (this.sleepCount <= 2 && this.Continue()){
-      //DoEvents
-      if (this.delay > 0) {
-        this.cnt = 2;
-        this.dt = this.DESIRED_DT / 2;
-      }
-      else{
-        this.cnt = 1;
-        this.dt = this.DESIRED_DT;
-      } // if
-      
-      for(cnt = cnt; cnt >= 1; cnt--){
-        this.updateState();
-        this.updateColorIndex(targetColorIndex, targetStartColor, targetNumColors, colorIndex, startColor, numColors);
-        this.drawBugs(targetColorIndex, targetStartColor, targetNumColors, colorIndex, startColor, numColors);
-        //win.Refresh
-        //DoEvents
-        if (! this.Continue) {
-          break;
-        }
-      }
-      eTime = Date.now().getTime();
-      this.nframes = this.nframes + 1;
-      
-      if (eTime > (sTime+500)) {
-        if (miscMath.fRand(1) < this.changeProb) {
-          this.randomSmallChange();
-        } // if
-        if (miscMath.fRand(1) < this.changeProb * 0.3) {
-          this.randomBigChange();
-        } // if
-        
-        elapsed = this.eTime - this.sTime;
-        
-        this.timePerFrame = elapsed / this.nframes - this.delay * 0.000001;
-        this.fps = this.nframes / elapsed;
-        //debug.Print ("elapsed: " & elapsed)
-        //debug.Print ("secs per frame: " & timePerFrame)
-        //debug.Print ("delay: " & delay)
-        
-        if (this.fps > this.MAX_FPS) {
-          this.delay = (1 / this.MAX_FPS - (this.timePerFrame + this.delay * 0.000001)) * 1000000;
-        }
-        else if (this.dt * this.fps < this.MIN_FPS * this.DESIRED_DT) {
-          // need to speed things up somehow
-          // Obviously we are taking to long to do the processing. Somehow 
-          // we need to reduce the processing time. A couple of suggestions are
-          // explored below: too many bugs, delay time can be made a little 
-          // longer, we can make the bugs shorter in length
-          if (this.nbugs > 10) { //always evaluate to false?
-            /*printf("reducing bugs to improve speed.\n");*/
-            this.nbugs = this.nbugs * this.fps / this.MIN_FPS;
-            if (this.ntargets >= this.nbugs / 2) {
-              this.mutateBug(1);
-            }
-            this.clearBugs();
-          }
-          else if (this.dt < 0.3) {
-            //debug.Print "increasing dt to improve speed."
-            this.dt = this.dt * this.MIN_FPS / this.fps;
-            this.computeConstants();
-          }
-          else if (this.trailLen > 10) {
-            this.clearBugs();
-            this.trailLen = this.trailLen * (this.fps / this.MIN_FPS);
-            if (this.trailLen < 10) {
-              this.trailLen = 10;
-            }
-            this.computeColorIndices();
-            this.initBugs();
-          }
-        }
-        
-        sTime = Date.now().getTime();
-        this.nframes = 0;
-      }
-      
-      if (this.delay > 10000) {
-        //Sleep (delay)
-      }
-      else{
-        this.delayAccum = this.delayAccum + this.delay;
-        if (this.delayAccum > 10000) {
-          this.delayAccum = 0;
-          this.sleepCount = 0;
-        }
-        this.sleepCount = this.sleepCount + 1;
-        if (this.sleepCount > 2) {
-            this.sleepCount = 0;
-        }
-      }
-      if (this.win == null) {
-        this.sleepCount = 100;
-      }
-      else if (! this.win.Visible) {
-        this.sleepCount = 100;
-      }
-    }
+    let eng = this;
+    this.timer = setInterval(function(){eng.processFrame()},this.msPerFrame);
   }
-  /*** screenhack ************************************************************/
+  
+  
+  
+  /**
+   * ProcessFrame
+   */
+  processFrame(){
+    if(!this.Continue){
+      clearInterval(this.timer);
+      this.timer = null;
+    }
+    
+    
+    let sTime = Date.now();
+    this.updateState();
+    let colorParams = this.updateColorIndex();
+    this.drawBugs(colorParams);
+    
+    let change = Math.random();
+    if (change < this.changeProb * 0.3) {
+      this.randomBigChange();
+    }
+    else if (change < this.changeProb) {
+      this.randomSmallChange();
+    }
+      
+    let eTime = Date.now();
+    let elapsed = eTime - sTime;
+    if (elapsed > this.msPerFrame/2) {
+      // need to speed things up somehow
+      // Obviously we are taking to long to do the processing. Somehow 
+      // we need to reduce the processing time. A couple of suggestions are
+      // explored below: too many bugs, delay time can be made a little 
+      // longer, we can make the bugs shorter in length
+      if (this.nbugs > 10) { //always evaluate to false?
+        console.log("Reducing bugs to improve speed.\n");
+        this.nbugs = Math.floor((this.msPerFrame/elapsed) * this.nbugs);
+        if (this.ntargets >= this.nbugs / 2) {
+          this.mutateBug(1);
+        }
+        this.clearBugs();
+      }
+      else if (this.dt < 0.3) {
+        //debug.Print "increasing dt to improve speed."
+        this.dt = this.dt * this.MIN_FPS / this.fps;
+        this.computeConstants();
+      }
+      else if (this.trailLen > 10) {
+        this.clearBugs();
+        this.trailLen = this.trailLen * (this.fps / this.MIN_FPS);
+        if (this.trailLen < 10) {
+          this.trailLen = 10;
+        }
+        this.computeColorIndices();
+        this.initBugs();
+      }
+      
+    }
+    
+  }
   
   
   
@@ -852,7 +816,7 @@ class Swarm{
     let temp = 0.0;
     let theta = 0.0;
     
-    this.updateState_checkIndex = 0;
+    this.updateState_checkIndex = this.updateState_checkIndex || 0;
     
     let b2;// As bug
     let j = 0;
@@ -861,7 +825,7 @@ class Swarm{
     
     for(j = 0; j < this.nbugs; j++){
       /* update closets bug for the bug indicated by checkIndex */
-      b = this.bugs(this.updateState_checkIndex);
+      b = this.bugs[this.updateState_checkIndex];
       
       // based on the x/y coordinates of the bug, and it's closest target, use
       // pythagorean theorum to determine its distance
@@ -870,25 +834,32 @@ class Swarm{
       temp = miscMath.sq(ax) + miscMath.sq(ay);
       for(i = 0; i < this.ntargets; i++){
         b2 = this.targets[i];
-        if (b2 === b.closest) break;
+        if (b2 === b.closest) continue;
         
         // if this item is closer than the one we think is closest, mark this
         // one as the closest
         ax = b2.pos[0] - b.pos[0];
         ay = b2.pos[1] - b.pos[1];
         theta = miscMath.sq(ax) + miscMath.sq(ay);
+        
+        // our creature does not want to give up the chase, it will stay 
+        // focussed on its prey. However if another prey animal is *really* 
+        // close (say half the distance) it breaks off its current chase and 
+        // goes for the one even closer
         if (theta * 2 < temp) {
           b.closest = b2;
           temp = theta;
-        } // if
+        }
+        
       }
-      this.updateState_checkIndex = (this.updateState_checkIndex + 1) % this.nbugs;
+      this.updateState_checkIndex++;
+      this.updateState_checkIndex %= this.nbugs;
     }
     
     /* update target state */
     for(i = 0; i < this.ntargets; i++){
       b = this.targets[i];
-      theta = miscMath.fRand(Math.PI * 2);
+      theta = Math.rand(Math.PI * 2);
       ax = this.targetAcc * Math.cos(theta);
       ay = this.targetAcc * Math.sin(theta);
       
@@ -917,36 +888,26 @@ class Swarm{
       b.pos[1] += (b.vel[1] * this.dt + ay * this.halfDtSq);
       
       /* check limits on targets */
-      if (b.pos[0] < 0) {
+      if (b.pos[0] < 0 || b.pos[0] >= this.xsize) {
         /* bounce */
-        b.pos[0] = -1 * b.pos[0];
-        b.vel[0] = -1 * b.vel[0];
+        b.vel[0] *= -1;
       }
-      else if (b.pos[0] >= this.maxx) {
+      if (b.pos[1] < 0 || b.pos[1] >= this.ysize) {
         /* bounce */
-        b.pos[0] = 2 * this.maxx - b.pos[0];
-        b.vel[0] = -1 * b.vel[0];
-      }
-      if (b.pos[1] < 0) {
-        /* bounce */
-        b.pos[1] *= -1;
-        b.vel[1] *= -1;
-      }
-      else if (b.pos[1] >= this.maxy) {
-        /* bounce */
-        b.pos[1] = 2 * this.maxy - b.pos[1];
         b.vel[1] *= -1;
       }
       
-      b.hist[this.head][0] = b.pos[0] * this.xsize;
-      b.hist[this.head][1] = b.pos[1] * this.xsize;
+      b.hist[this.head] = JSON.clone(b.pos);
     }
     
     /* update bug state */
-    for(i = 0; i<this.nbugs; i--){
+    for(i = 0; i<this.nbugs; i++){
       b = this.bugs[i];
       
-      theta = Math.atan(b.closest.pos[1] - b.pos[1] + miscMath.fRand(this.noise) - (this.noise / 2), b.closest.pos[0] - b.pos[0] + miscMath.fRand(this.noise) - (this.noise / 2));
+      theta = Math.atan(
+            b.closest.pos[1] - b.pos[1] + Math.rand(this.noise) - (this.noise / 2)
+          , b.closest.pos[0] - b.pos[0] + Math.rand(this.noise) - (this.noise / 2)
+        );
       ax = this.maxAcc * Math.cos(theta);
       ay = this.maxAcc * Math.sin(theta);
       
@@ -987,74 +948,69 @@ class Swarm{
       }
       
       /* update position */
-      b.pos[0] += (b.vel(0) * this.dt + ax * this.halfDtSq);
-      b.pos[1] += (b.vel(1) * this.dt + ay * this.halfDtSq);
+      b.pos[0] += (b.vel[0] * this.dt + ax * this.halfDtSq);
+      b.pos[1] += (b.vel[1] * this.dt + ay * this.halfDtSq);
       
-      b.hist[this.head][0] = b.pos[0] * this.xsize;
-      b.hist[this.head][1] = b.pos[1] * this.xsize;
+      b.hist[this.head] = JSON.clone(b.pos);
     }
     
   }
-  /*** updateState ***********************************************************/
   
   
   
-  /*** updateColorIndex *******************************************************
+  /**
+   * updateColorIndex
    *
-   ***************************************************************************/
-  updateColorIndex(tColorIdx,tci0,tnc,colorIdx,ci0,nc){
+   */
+  updateColorIndex(){
+    let rtn = {
+      tColorIdx:[],
+      tci0:0,
+      tnc:this.trailLen,
+      colorIdx:[],
+      ci0:0,
+      nc:this.trailLen,
+    };
     switch(this.colorScheme){
       case this.COLOR_TRAILS:
-        tColorIdx = this.redIndex;
-        tci0 = 0;
-        tnc = this.trailLen;
-        colorIdx = this.blueIndex;
-        ci0 = 0;
-        nc = this.trailLen;
+        rtn.tColorIdx = this.redIndex;
+        rtn.tci0 = 0;
+        rtn.colorIdx = this.blueIndex;
+        rtn.ci0 = 0;
         break;
       case this.GRAY_SCHIZO:
-        tColorIdx = this.graySIndex;
-        tci0 = this.head;
-        tnc = this.trailLen;
-        colorIdx = this.graySIndex;
-        ci0 = this.head;
-        nc = this.trailLen;
+        rtn.tColorIdx = this.graySIndex;
+        rtn.tci0 = this.head;
+        rtn.colorIdx = this.graySIndex;
+        rtn.ci0 = this.head;
         break;
       case this.COLOR_SCHIZO:
-        tColorIdx = this.redSIndex;
-        tci0 = this.head;
-        tnc = this.trailLen;
-        colorIdx = this.blueSIndex;
-        ci0 = this.head;
-        nc = this.trailLen;
+        rtn.tColorIdx = this.redSIndex;
+        rtn.tci0 = this.head;
+        rtn.colorIdx = this.blueSIndex;
+        rtn.ci0 = this.head;
         break;
       case this.GRAY_TRAILS:
-        tColorIdx = this.grayIndex;
-        tci0 = 0;
-        tnc = this.trailLen;
-        colorIdx = this.grayIndex;
-        ci0 = 0;
-        nc = this.trailLen;
+        rtn.tColorIdx = this.grayIndex;
+        rtn.tci0 = 0;
+        rtn.colorIdx = this.grayIndex;
+        rtn.ci0 = 0;
         break;
       case this.RANDOM_TRAILS:
-        tColorIdx = this.redIndex;
-        tci0 = 0;
-        tnc = this.trailLen;
-        colorIdx = this.randomIndex;
-        ci0 = 0;
-        nc = this.trailLen;
+        rtn.tColorIdx = this.redIndex;
+        rtn.tci0 = 0;
+        rtn.colorIdx = this.randomIndex;
+        rtn.ci0 = 0;
         break;
       case this.RANDOM_SCHIZO:
-        tColorIdx = this.redIndex;
-        tci0 = this.head;
-        tnc = this.trailLen;
-        colorIdx = this.randomIndex;
-        ci0 = this.head;
-        nc = this.trailLen;
+        rtn.tColorIdx = this.redIndex;
+        rtn.tci0 = this.head;
+        rtn.colorIdx = this.randomIndex;
+        rtn.ci0 = this.head;
         break;
     }
+    return rtn;
   }
-  /*** updateColorIndex ******************************************************/
   
   
   

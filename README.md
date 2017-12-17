@@ -1,5 +1,5 @@
-# VbSwarm
+# jsSwarm
 
-Based on XRay Swarm for linux, this was a Windows variant I wrote for myself (in 2004 according to the SVN tag)
-
-I no longer have a VB compiler, so I have no idea if this compiles, but I know it was my favoured screen saver for a long time.
+Based on XRay Swarm for linux, this is a javascript variant for in 
+browser use. There is also a VB variant as well. It has been compiled 
+as a windows screen saver.

@@ -3,18 +3,23 @@
  *****************************************************************************/
 'use strict';
 
+
+Math.rand = Math.rand || function(maxVal){
+  if(maxVal !== 0 && !maxVal){
+    maxVal = 1;
+  }
+  let val = Math.random() * maxVal; // Rnd() * maxVal
+  return val;
+};
+
+
 class miscMath{
   //*** fRand ********************************************************************
   //* mimics the C frand fucntion
   //******************************************************************************
   static fRand(maxVal){
     console.debug("Deprecated: miscMath.fRand");
-    if(maxVal !== 0 && !maxVal){
-      maxVal = 1;
-    }
-    
-    let val = Math.random() * maxVal; // Rnd() * maxVal
-    return val;
+    Math.rand(maxVal);
   }
   //*** fRand ********************************************************************
   

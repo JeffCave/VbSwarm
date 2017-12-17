@@ -38,13 +38,13 @@ class sBug{
     this.swarm = swarm;
     this.closest = null;
     
-    this.pos[0] = miscMath.fRand(this.swarm.xsize);
-    this.pos[1] = miscMath.fRand(this.swarm.ysize);
+    this.pos[0] = Math.rand(this.swarm.xsize);
+    this.pos[1] = Math.rand(this.swarm.ysize);
     
-    this.vel[0] = miscMath.fRand(this.swarm.targetVel / 2);
-    this.vel[1] = miscMath.fRand(this.swarm.targetVel / 2);
+    this.vel[0] = Math.rand(this.swarm.targetVel / 2);
+    this.vel[1] = Math.rand(this.swarm.targetVel / 2);
     
-    this.hist[this.swarm.head] = JSON.parse(JSON.stringify(this.pos));
+    this.hist[this.swarm.head] = JSON.clone(this.pos);
     
   }
   

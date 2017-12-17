@@ -69,3 +69,9 @@ function StartScreensaver(){
   engine.screenhack(canvas);
 }
 
+
+
+JSON.clone = JSON.clone || function(obj){
+  return JSON.parse(JSON.stringify(obj));
+}
+

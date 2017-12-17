@@ -58,9 +58,9 @@ class RGB{
   
   get HexCode(){
     return [
-        this.red.toString(16),
-        this.green.toString(16),
-        this.blue.toString(16)
+        this.red.toString(16).padStart(2,'0'),
+        this.green.toString(16).padStart(2,'0'),
+        this.blue.toString(16).padStart(2,'0'),
       ].join('');
   }
   
