@@ -28,23 +28,18 @@ class sBug{
    ***************************************************************************/
   constructor(swarm){
     this.pPos = [0,0];
-    this.pHist = Array(100)
-      .fill(0)
-      .map(function(){
-        return Array(2).fill(0);
-      });
     this.pVel = [0,0];
     
     this.swarm = swarm;
     this.closest = null;
     
-    this.pos[0] = Math.rand(this.swarm.xsize);
-    this.pos[1] = Math.rand(this.swarm.ysize);
+    this.pos[0] = Math.random();
+    this.pos[1] = Math.random();
     
     this.vel[0] = Math.rand(this.swarm.targetVel / 2);
     this.vel[1] = Math.rand(this.swarm.targetVel / 2);
     
-    this.hist[this.swarm.head] = JSON.clone(this.pos);
+    this.hist.push(JSON.clone(this.pos));
     
   }
   
@@ -59,11 +54,18 @@ class sBug{
   }
   
   get hist(){
+    if(typeof this.pHist === 'undefined'){
+      this.pHist = [];
+    }
     return this.pHist;
   }
   
   get vel(){
       return this.pVel;
+  }
+  
+  get isPrey(){
+    return this.closest === null;
   }
   
 }

@@ -14,7 +14,7 @@ var canvas;
  *
  */
 function main(){
-  canvas = document.querySelector('canvas');
+  canvas = document.querySelector('svg');
   engine = new Swarm(canvas);
   
   LoadSettings();

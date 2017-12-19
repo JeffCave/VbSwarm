@@ -126,11 +126,13 @@ class Swarm{
   
   
   
-  /*** initVar ****************************************************************
+  /**
+   * initVar
+   * 
    * In the 'C' version, there are a lot of variables that are initialized at
    * the same time that they are declared. Since this is not possible in VB, 
    * we call initVar to initialize them when the class is created.
-   ***************************************************************************/
+   */
   initVar(){
     this.good1.trailLen = this.Params.trailLen;
     
@@ -167,9 +169,9 @@ class Swarm{
   
   
   
-  /*** get MAX_TRAIL_LEN ******************************************************
-   *
-   ***************************************************************************/
+  /**
+   * get MAX_TRAIL_LEN
+   */
   get MAX_TRAIL_LEN(){
     let max = this.Params.trailLen.max;
     return max;
@@ -186,59 +188,25 @@ class Swarm{
   get numParamSets (){ return 1;   }
   
   
-  /*** clearBugs **************************************************************
+  /**
+   * clearBugs
+   * 
    * Clear the screen of bugs
-   ***************************************************************************/
+   */
   clearBugs(){
-      let colour = new RGB(0,0,0);
-      let j = 0;
-      let temp = 0;
-      
-      this.tail -= 1;
-      if (this.tail < 0) {
-        this.tail = this.trailLen - 1;
-      } // if
-      
-      if ((this.head + 1) % (this.trailLen - 1) == this.tail) {
-        this.temp = (this.tail + 1) % this.trailLen;
-        
-        this.allbugs.forEach(function(b){
-          b.swarm.drawSegment({
-            colour: colour,
-            x1:b.hist[b.swarm.tail][0],
-            y1:b.hist[b.swarm.tail][1],
-            x2:b.hist[temp][0],
-            y2:b.hist[temp][1],
-          });
-        });
-        
-        
-        temp = (this.tail + 1) % (this.trailLen - 1);
-      } // if
-      
-      j = this.tail;
-      while (j !== this.head){
-        temp = (j + 1) % (this.trailLen);
-        
-        this.allbugs.forEach(function(b){
-          b.swarm.drawSegment({
-            colour: colour,
-            x1:b.hist[b.swarm.tail][0],
-            y1:b.hist[b.swarm.tail][1],
-            x2:b.hist[temp][0],
-            y2:b.hist[temp][1],
-          });
-        });
-        
-        j = temp;
-      }
+    Array
+      .from(this.win.querySelectorAll('path'))
+      .forEach(function(path){
+        path.parentNode.removeChild(path);
+      });
   }
   
   
   
-  /*** computeConstants *******************************************************
+  /**
+   * computeConstants
    *
-   ***************************************************************************/
+   */
   computeConstants(){
     this.halfDtSq = miscMath.sq(this.dt) * 0.5;
     this.dtInv = 1 / this.dt;
@@ -286,76 +254,65 @@ class Swarm{
   
   
   
-  drawSegment(def){
-      let ctx = this.win.getContext("2d");
-      ctx.beginPath();
-      ctx.strokeStyle = def.colour.HtmlCode;
-      ctx.moveTo( Math.floor(def.x1), Math.floor(def.y1) );
-      ctx.lineTo( Math.floor(def.x2), Math.floor(def.y2) );
-      ctx.stroke();
+  /**
+   * drawBugs
+   *
+   */
+  drawBugs(params){
+    let colour = this.colors[params.tColorIdx[params.nc - params.ci0]].HtmlCode;
+    console.debug('HARDCODE: color of bugs. Should be drawn segment by segment');
+    colour = '#FFFFFF';
+    
+    let paths = Array.from(this.win.querySelectorAll('path'));
+    while (paths.length > this.allbugs.length){
+      let path = paths.pop();
+      this.win.removeChild(path);
+    }
+    while (paths.length < this.allbugs.length){
+      let path = document.createElementNS('http://www.w3.org/2000/svg',"path");
+      paths.push(path);
+      this.win.appendChild(path);
+    }
+    
+    let universe = {
+      height: this.ysize,
+      width: this.xsize,
+    }
+    this.allbugs
+      .map(function(b){
+        return b.hist;
+      })
+      .map(function(b){
+        b = b
+          .filter(function(seg){
+            return !(seg[0] === null || seg[1] === null);
+          })
+          .map(function(seg){
+            seg = [
+                Math.floor(universe.height * seg[0]),
+                Math.floor(universe.width * seg[1])
+              ];
+            seg = seg.join(',');
+            return seg;
+          })
+          .join(' L ')
+          ;
+        return "M " + b;
+      })
+      .forEach(function(b,i) {
+        let path = paths[i];
+        path.setAttribute('d',b);
+        path.setAttribute('stroke',colour);
+      });
       
   }
   
   
   
   /**
-   * drawBugs
+   * initBugs
    *
    */
-  drawBugs(params){
-    /*
-    tColorIdx, tci0, tnc, colorIdx, ci0, nc
-    */
-    let j = 0;
-    let temp = 0;
-    let colour = 0;
-    
-    if ((this.head + 1) % (this.trailLen) === this.tail) {
-      /* first, erase last segment of bugs if necessary */
-      temp = (this.tail + 1) % (this.trailLen);
-      
-      colour = new RGB(0,0,0);
-      this.allbugs.forEach(function(b){
-        b.swarm.drawSegment({
-          colour: colour,
-          x1:b.hist[b.swarm.tail][0],
-          y1:b.hist[b.swarm.tail][1],
-          x2:b.hist[temp][0],
-          y2:b.hist[temp][1],
-        });
-      });
-      
-      this.tail = (this.tail + 1) % this.trailLen;
-    }
-    
-    j = this.tail;
-    while (j != this.head){
-      temp = (j + 1) % (this.trailLen);
-      
-      colour = this.colors[params.tColorIdx[params.nc - params.ci0]];
-      this.allbugs.forEach(function(b) {
-        b.swarm.drawSegment({
-          colour: colour,
-          x1:b.hist[b.swarm.tail][0],
-          y1:b.hist[b.swarm.tail][1],
-          x2:b.hist[temp][0],
-          y2:b.hist[temp][1],
-        });
-      });
-      
-      params.ci0 = (params.ci0 + 1) % params.nc;
-      params.tci0 = (params.tci0 + 1) % params.tnc;
-      
-      j = temp;
-      
-    }
-  }
-  
-  
-  
-  /*** initBugs ********************************************************
-   *
-   ********************************************************************/
   initBugs(){
     let i = 0;
     
@@ -388,33 +345,27 @@ class Swarm{
     if (this.ntargets > this.MAX_TARGETS) { this.ntargets = this.MAX_TARGETS}
     if (this.trailLen > this.MAX_TRAIL_LEN) { this.trailLen = this.MAX_TRAIL_LEN}
     
-    this.ntotbugs = this.ntargets + this.nbugs;
+    let totbugs = this.ntargets + this.nbugs;
     
     this.allbugs = [];
     this.bugs = [];
     this.targets = [];
-    for(i = 0; i<this.ntotbugs; i++){
+    for(i = 0; i< totbugs; i++){
       let b = new sBug(this);
       this.allbugs.push(b);
     }
     this.bugs = this.allbugs.slice(0,this.nbugs);
     this.targets = this.allbugs.slice(this.nbugs);
     
-    let targets = this.targets;
-    this.bugs.forEach(function(b,i){
-      let targ = b.swarm.targets.length - 1;
-      targ *= Math.random();
-      targ = Math.floor(targ);
-      b.closest = targets[targ];
-    });
-    
+    this.pickNewTargets();
   }
   
   
   
-  /*** InitCMap ********************************************************
+  /**
+   * InitCMap
    * 
-   ********************************************************************/
+   */
   initCMap(){
     let i = 0;
     let n = 0;
@@ -486,8 +437,9 @@ class Swarm{
   initGraphics(){
     this.initCMap();
     
-    this.xsize = this.win.width;
-    this.ysize = this.win.height;
+    
+    this.xsize = this.win.clientWidth;
+    this.ysize = this.win.clientHeight;
     
     this.xc = this.xsize / 2;
     this.yc = this.ysize / 2;
@@ -566,22 +518,30 @@ class Swarm{
   
   
   
-  /*** pickNewTargets *********************************************************
+  /**
+   * pickNewTargets
+   * 
    * This cycles through all of the bugs and sets them to a new, random,
-   * target. Currently this is favouring one bug.
-   ***************************************************************************/
+   * target.
+   */
   pickNewTargets(){
-    for(let i = 0; i < this.nbugs; i++){
-      //Set bugs(i).closest = targets(Math.rand(ntargets - 1))
-      this.bugs[i].closest = this.targets[i % this.ntargets];
-    }
+    let targets = this.targets;
+    this.bugs.forEach(function(b,i){
+      let targ = b.swarm.targets.length;
+      targ *= Math.random();
+      targ = Math.floor(targ);
+      b.closest = targets[targ];
+    });
+    
+
   }
   
   
   
-  /*** randomSmallChange ******************************************************
+  /**
+   * randomSmallChange
    *
-   ***************************************************************************/
+   */
   randomSmallChange(){
     if (this.callDepth > 10) return;
     this.callDepth = (this.callDepth || 0) + 1;
@@ -600,10 +560,10 @@ class Swarm{
       case 3:    /* target velocity */
         this.mutateParam(this.targetVel);
         break;
-      case 4:    ///* noise */
+      case 4:    /* noise */
         this.mutateParam(this.noise);
         break;
-      case 5:    ///* minVelMultiplier */
+      case 5:    /* minVelMultiplier */
         this.mutateParam(this.minVelMultiplier);
         break;
       case 6:    /* target to bug */
@@ -711,9 +671,10 @@ class Swarm{
   }
   
   
-  /*** screenhack *************************************************************
+  /**
+   * screenhack
    *
-   ***************************************************************************/
+   */
   screenhack(w /* as window */){
     
     this.initVar();
@@ -776,10 +737,19 @@ class Swarm{
       // we need to reduce the processing time. A couple of suggestions are
       // explored below: too many bugs, delay time can be made a little 
       // longer, we can make the bugs shorter in length
-      if (this.nbugs > 10) { //always evaluate to false?
+      if (this.bugs.length > 10) { //always evaluate to false?
         console.log("Reducing bugs to improve speed.\n");
-        this.nbugs = Math.floor((this.msPerFrame/elapsed) * this.nbugs);
-        if (this.ntargets >= this.nbugs / 2) {
+        let numBugs = Math.floor((this.msPerFrame/elapsed) * this.bugs.length);
+        if(numBugs < 10) {
+          numBugs = 10;
+        }
+        while(numBugs < this.bugs.length) {
+          let b = this.bugs.pop();
+          b = this.allbugs.indexOf(b);
+          this.allbugs.splice(b,1);
+        }
+        
+        while (this.targets.length >= this.bugs.length / 2) {
           this.mutateBug(1);
         }
         this.clearBugs();
@@ -805,154 +775,105 @@ class Swarm{
   
   
   
-  /*** updateState ************************************************************
+  /** 
+   * updateState
    *
-   ***************************************************************************/
+   */
   updateState(){
-    let i = 0;
-    let b; // As bug
-    let ax = 0.0;
-    let ay = 0.0;
-    let temp = 0.0;
-    let theta = 0.0;
-    
-    this.updateState_checkIndex = this.updateState_checkIndex || 0;
-    
-    let b2;// As bug
-    let j = 0;
-    
-    this.head = (this.head + 1) % this.trailLen;
-    
-    for(j = 0; j < this.nbugs; j++){
-      /* update closets bug for the bug indicated by checkIndex */
-      b = this.bugs[this.updateState_checkIndex];
-      
+    this.bugs.forEach(function(bug,j){
       // based on the x/y coordinates of the bug, and it's closest target, use
       // pythagorean theorum to determine its distance
-      ax = b.closest.pos[0] - b.pos[0];
-      ay = b.closest.pos[1] - b.pos[1];
-      temp = miscMath.sq(ax) + miscMath.sq(ay);
-      for(i = 0; i < this.ntargets; i++){
-        b2 = this.targets[i];
-        if (b2 === b.closest) continue;
+      let x = bug.closest.pos[0] - bug.pos[0];
+      let y = bug.closest.pos[1] - bug.pos[1];
+      let dist = miscMath.sq(x) + miscMath.sq(y);
+      bug.swarm.targets.forEach(function(targ,i){
+        // if this is already the one marked closest, there is nothing to check
+        if (targ === bug.closest) return;
         
         // if this item is closer than the one we think is closest, mark this
         // one as the closest
-        ax = b2.pos[0] - b.pos[0];
-        ay = b2.pos[1] - b.pos[1];
-        theta = miscMath.sq(ax) + miscMath.sq(ay);
+        let x = targ.pos[0] - bug.pos[0];
+        let y = targ.pos[1] - bug.pos[1];
+        let newDist = miscMath.sq(x) + miscMath.sq(y);
         
         // our creature does not want to give up the chase, it will stay 
         // focussed on its prey. However if another prey animal is *really* 
         // close (say half the distance) it breaks off its current chase and 
         // goes for the one even closer
-        if (theta * 2 < temp) {
-          b.closest = b2;
-          temp = theta;
+        if (newDist * 2 < dist) {
+          bug.closest = targ;
+          dist = newDist;
         }
         
-      }
-      this.updateState_checkIndex++;
-      this.updateState_checkIndex %= this.nbugs;
-    }
+      });
+    });
     
     /* update target state */
-    for(i = 0; i < this.ntargets; i++){
-      b = this.targets[i];
-      theta = Math.rand(Math.PI * 2);
-      ax = this.targetAcc * Math.cos(theta);
-      ay = this.targetAcc * Math.sin(theta);
+    this.allbugs.forEach(function(b,i){
+      let newVel = 0;
+      let velSq = 0;
+      let maxVel = 0;
+      let acc = 0;
+      if(b.isPrey){
+        velSq = b.swarm.targetVelSq;
+        maxVel = b.swarm.targetVel;
+        acc = b.swarm.targetAcc;
+        newVel = Math.rand(Math.PI * 2);
+      }
+      else{
+        velSq = b.swarm.maxVelSq;
+        maxVel = b.swarm.maxVel;
+        acc = b.swarm.maxAcc;
+        newVel = Math.atan(
+              b.closest.pos[1] - b.pos[1] + Math.rand(b.swarm.noise) - (b.swarm.noise / 2)
+            , b.closest.pos[0] - b.pos[0] + Math.rand(b.swarm.noise) - (b.swarm.noise / 2)
+          );
+      }
+      let x = acc * Math.cos(newVel);
+      let y = acc * Math.sin(newVel);
       
-      b.vel[0] = b.vel[0] + ax * this.dt;
-      b.vel[1] = b.vel[1] + ay * this.dt;
+      b.vel[0] += x * b.swarm.dt;
+      b.vel[1] += y * b.swarm.dt;
       
       /* check velocity */
-      temp = miscMath.sq(b.vel[0]) + miscMath.sq(b.vel[1]);
-      if (temp > this.targetVelSq) {
-        temp = this.targetVel / miscMath.sqrt(temp);
+      newVel = miscMath.sq(b.vel[0]) + miscMath.sq(b.vel[1]);
+      if (newVel > velSq) {
+        newVel = maxVel / miscMath.sqrt(newVel);
         /* save old vel for acc computation */
-        ax = b.vel[0];
-        ay = b.vel[1];
+        x = b.vel[0];
+        y = b.vel[1];
         
         /* compute new velocity */
-        b.vel[0] *= temp;
-        b.vel[1] *= temp;
+        b.vel[0] *= newVel;
+        b.vel[1] *= newVel;
         
         /* update acceleration */
-        ax = (b.vel[0] - ax) * this.dtInv;
-        ay = (b.vel[1] - ay) * this.dtInv;
+        x = (b.vel[0] - x) * b.swarm.dtInv;
+        y = (b.vel[1] - y) * b.swarm.dtInv;
       }
       
       /* update position */
-      b.pos[0] += (b.vel[0] * this.dt + ax * this.halfDtSq);
-      b.pos[1] += (b.vel[1] * this.dt + ay * this.halfDtSq);
+      b.pos[0] += (b.vel[0] * b.swarm.dt + x * b.swarm.halfDtSq);
+      b.pos[1] += (b.vel[1] * b.swarm.dt + y * b.swarm.halfDtSq);
       
-      /* check limits on targets */
-      if (b.pos[0] < 0 || b.pos[0] >= this.xsize) {
-        /* bounce */
-        b.vel[0] *= -1;
-      }
-      if (b.pos[1] < 0 || b.pos[1] >= this.ysize) {
-        /* bounce */
-        b.vel[1] *= -1;
-      }
-      
-      b.hist[this.head] = JSON.clone(b.pos);
-    }
-    
-    /* update bug state */
-    for(i = 0; i<this.nbugs; i++){
-      b = this.bugs[i];
-      
-      theta = Math.atan(
-            b.closest.pos[1] - b.pos[1] + Math.rand(this.noise) - (this.noise / 2)
-          , b.closest.pos[0] - b.pos[0] + Math.rand(this.noise) - (this.noise / 2)
-        );
-      ax = this.maxAcc * Math.cos(theta);
-      ay = this.maxAcc * Math.sin(theta);
-      
-      b.vel[0] = b.vel[0] + ax * this.dt;
-      b.vel[1] = b.vel[1] + ay * this.dt;
-      
-      /* check velocity */
-      temp = miscMath.sq(b.vel[0]) + miscMath.sq(b.vel[1]);
-      if (temp > this.maxVelSq) {
-        temp = this.maxVel / miscMath.sqrt(temp);
-        
-        /* save old vel for acc computation */
-        ax = b.vel[0];
-        ay = b.vel[1];
-        
-        /* compute new velocity */
-        b.vel[0] *= temp;
-        b.vel[1] *= temp;
-        
-        /* update acceleration */
-        ax = (b.vel[0] - ax) * this.dtInv;
-        ay = (b.vel[1] - ay) * this.dtInv;
-      }
-      else if (temp < this.minVelSq) {
-        temp = this.minVel / miscMath.sqrt(temp);
-        
-        /* save old vel for acc computation */
-        ax = b.vel[0];
-        ay = b.vel[1];
-        
-        /* compute new velocity */
-        b.vel[0] *= temp;
-        b.vel[1] *= temp;
-        
-        /* update acceleration */
-        ax = (b.vel[0] - ax) * this.dtInv;
-        ay = (b.vel[1] - ay) * this.dtInv;
+      // prey is not allowed to leave the game board
+      if(b.isPrey){
+        /* check limits on targets */
+        if (b.pos[0] < 0 || b.pos[0] >= b.swarm.xsize) {
+          /* bounce */
+          b.vel[0] *= -1;
+        }
+        if (b.pos[1] < 0 || b.pos[1] >= b.swarm.ysize) {
+          /* bounce */
+          b.vel[1] *= -1;
+        }
       }
       
-      /* update position */
-      b.pos[0] += (b.vel[0] * this.dt + ax * this.halfDtSq);
-      b.pos[1] += (b.vel[1] * this.dt + ay * this.halfDtSq);
-      
-      b.hist[this.head] = JSON.clone(b.pos);
-    }
+      b.hist.unshift(JSON.clone(b.pos));
+      if(b.hist.length > b.swarm.trailLen) {
+        b.hist.pop();
+      }
+    });
     
   }
   
@@ -1014,9 +935,10 @@ class Swarm{
   
   
   
-  /*** CreateParams ***********************************************************
+  /** 
+   * CreateParams
    *
-   ***************************************************************************/
+   */
   CreateParams(){
       this.Params = {};
       this.Params["cls"] = {type:'int',min:0,max:1,val:1};
