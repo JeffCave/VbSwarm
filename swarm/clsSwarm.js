@@ -145,8 +145,8 @@ class Swarm{
     this.changeProb = 0.08;
     
     this.dt = this.good1.dt;
-    this.fps = this.good1.dt;
-    this.msPerFrame = 1000/this.fps;
+    this.fps = this.good1.framesPerSecond;
+    this.msPerFrame = Math.floor(1000/this.fps);
     this.targetVel = this.good1.targetVel;
     this.targetAcc = this.good1.targetAcc;
     this.maxVel = this.good1.maxVel;
@@ -214,20 +214,20 @@ class Swarm{
     this.maxVelSq = miscMath.sq(this.maxVel);
     this.minVel = this.maxVel * this.minVelMultiplier;
     this.minVelSq = miscMath.sq(this.minVel);
-  } 
+  }
   
   
-  /*** computeColorIndices **************************************************
+  
+  /**
+   * computeColorIndices
    *
-   *************************************************************************/
+   */
   computeColorIndices(){
-    let i = 0;
-    
     /* note: colors are used in *reverse* order! */
-    //let redSchizoLength = this.trailLen / 4;
+    let redSchizoLength = this.trailLen / 4;
     let blueSchizoLength = this.trailLen / 2;
     
-    for(i = this.trailLen - 1; i >= 0; i--){
+    for(let i = this.trailLen - 1; i >= 0; i--){
       let schizo = Math.floor((i * 16 / this.trailLen) + 0.5);
       //grayscale
       this.grayIndex[i] = 4 + i;
@@ -259,9 +259,15 @@ class Swarm{
    *
    */
   drawBugs(params){
-    let colour = this.colors[params.tColorIdx[params.nc - params.ci0]].HtmlCode;
+    let colour = null;
+    try{
+      colour = this.colors[params.tColorIdx[params.nc - params.ci0]].HtmlCode;
+    }
+    catch(e){
+      console.warn('Colour failed to be looked up');
+    }
     console.debug('HARDCODE: color of bugs. Should be drawn segment by segment');
-    colour = '#FFFFFF';
+    colour = '#00FF00';
     
     let paths = Array.from(this.win.querySelectorAll('path'));
     while (paths.length > this.allbugs.length){
@@ -277,16 +283,19 @@ class Swarm{
     let universe = {
       height: this.ysize,
       width: this.xsize,
-    }
+    };
     this.allbugs
       .map(function(b){
-        return b.hist;
+        return {
+            'isPrey': b.isPrey,
+            'hist':b.hist,
+          };
       })
       .map(function(b){
-        b = b
-          .filter(function(seg){
-            return !(seg[0] === null || seg[1] === null);
-          })
+        let path = "M " + b.hist
+          //.filter(function(seg){
+          //  return !(seg[0] === null || seg[1] === null);
+          //})
           .map(function(seg){
             seg = [
                 Math.floor(universe.height * seg[0]),
@@ -297,12 +306,17 @@ class Swarm{
           })
           .join(' L ')
           ;
-        return "M " + b;
+        return {
+            path:path,
+            isPrey:b.isPrey,
+          };
       })
       .forEach(function(b,i) {
         let path = paths[i];
-        path.setAttribute('d',b);
-        path.setAttribute('stroke',colour);
+        path.setAttribute('d',b.path);
+        path.setAttribute('stroke',b.isPrey?'#FFFFFF':colour);
+        path.setAttribute('fill','none');
+        path.setAttribute('stroke-linecap',"round");
       });
       
   }
@@ -718,7 +732,7 @@ class Swarm{
     
     let sTime = Date.now();
     this.updateState();
-    let colorParams = this.updateColorIndex();
+    let colorParams = this.updateColorIndex(this.colorScheme);
     this.drawBugs(colorParams);
     
     let change = Math.random();
@@ -731,6 +745,7 @@ class Swarm{
       
     let eTime = Date.now();
     let elapsed = eTime - sTime;
+    //console.log(['Time:',sTime,eTime,elapsed].join('\n - '));
     if (elapsed > this.msPerFrame/2) {
       // need to speed things up somehow
       // Obviously we are taking to long to do the processing. Somehow 
@@ -883,7 +898,7 @@ class Swarm{
    * updateColorIndex
    *
    */
-  updateColorIndex(){
+  updateColorIndex(scheme){
     let rtn = {
       tColorIdx:[],
       tci0:0,
@@ -892,7 +907,8 @@ class Swarm{
       ci0:0,
       nc:this.trailLen,
     };
-    switch(this.colorScheme){
+
+    switch(scheme){
       case this.COLOR_TRAILS:
         rtn.tColorIdx = this.redIndex;
         rtn.tci0 = 0;
@@ -930,6 +946,7 @@ class Swarm{
         rtn.ci0 = this.head;
         break;
     }
+    rtn.scheme = scheme;
     return rtn;
   }
   

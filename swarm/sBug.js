@@ -7,6 +7,7 @@
 
 
 const bugParams = {
+    'framesPerSecond': 10,
     'dt' : 0.3,
     'targetVel' : 0.03,
     'targetAcc' : 0.02,
