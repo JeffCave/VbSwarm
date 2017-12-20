@@ -13,6 +13,9 @@ Math.rand = Math.rand || function(maxVal){
 };
 
 
+Math.sq = Math.sq || function (val){
+  return Math.pow(val,2);
+}
 class miscMath{
   /**
    * WrapByte

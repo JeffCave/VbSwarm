@@ -150,12 +150,12 @@ class Swarm{
    *
    */
   computeConstants(){
-    this.halfDtSq = miscMath.sq(this.dt) * 0.5;
+    this.halfDtSq = Math.sq(this.dt) * 0.5;
     this.dtInv = 1 / this.dt;
-    this.targetVelSq = miscMath.sq(this.targetVel);
-    this.maxVelSq = miscMath.sq(this.maxVel);
+    this.targetVelSq = Math.sq(this.targetVel);
+    this.maxVelSq = Math.sq(this.maxVel);
     this.minVel = this.maxVel * this.minVelMultiplier;
-    this.minVelSq = miscMath.sq(this.minVel);
+    this.minVelSq = Math.sq(this.minVel);
   }
   
   
@@ -266,7 +266,7 @@ class Swarm{
     this.trailLen = Math.floor(this.trailLen);
     if (this.trailLen > this.MAX_TRAIL_LEN) { this.trailLen = this.MAX_TRAIL_LEN}
     
-
+    
     this.trails = {
         gray : [],
         red : [],
@@ -636,7 +636,7 @@ class Swarm{
       // pythagorean theorum to determine its distance
       let x = bug.closest.pos[0] - bug.pos[0];
       let y = bug.closest.pos[1] - bug.pos[1];
-      let dist = miscMath.sq(x) + miscMath.sq(y);
+      let dist = Math.pow(x,2) + Math.pow(y,2);
       bug.swarm.targets.forEach(function(targ,i){
         // if this is already the one marked closest, there is nothing to check
         if (targ === bug.closest) return;
@@ -645,7 +645,7 @@ class Swarm{
         // one as the closest
         let x = targ.pos[0] - bug.pos[0];
         let y = targ.pos[1] - bug.pos[1];
-        let newDist = miscMath.sq(x) + miscMath.sq(y);
+        let newDist = Math.pow(x,2) + Math.pow(y,2);
         
         // our creature does not want to give up the chase, it will stay 
         // focussed on its prey. However if another prey animal is *really* 
@@ -687,9 +687,9 @@ class Swarm{
       b.vel[1] += y * b.swarm.dt;
       
       /* check velocity */
-      newVel = miscMath.sq(b.vel[0]) + miscMath.sq(b.vel[1]);
+      newVel = Math.pow(b.vel[0],2) + Math.pow(b.vel[1],2);
       if (newVel > velSq) {
-        newVel = maxVel / miscMath.sqrt(newVel);
+        newVel = maxVel / Math.pow(newVel,0.5);
         /* save old vel for acc computation */
         x = b.vel[0];
         y = b.vel[1];
