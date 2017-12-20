@@ -12,23 +12,3 @@ Math.rand = Math.rand || function(maxVal){
   return val;
 };
 
-
-Math.sq = Math.sq || function (val){
-  return Math.pow(val,2);
-}
-class miscMath{
-  /**
-   * WrapByte
-   *
-   */
-  static WrapByte(b){
-    if (b < 0){
-      return this.WrapByte(256 - b);
-    }
-    else{
-      return b % 256;
-    }
-  }
-  
-  
-}
