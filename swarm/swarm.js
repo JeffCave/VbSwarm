@@ -55,29 +55,6 @@ class Swarm{
   
   
   constructor(canvas){
-    this.colors = Array(256).fill(0);
-    
-    this.win = canvas; 
-    
-    this.xsize = null; // = 0;
-    this.ysize = null; // = 0;
-    this.xc = null; // = 0;
-    this.yc = null; // = 0;
-    this.delay = null;
-    
-    this.nbugs = 0;
-    this.ntargets = 0;
-    this.ntotbugs = 0;
-    this.trailLen = 0;
-    
-    /* vars dependent on those above */
-    this.dtInv = 0.0;
-    this.halfDtSq = 0.0;
-    this.maxVelSq = 0.0;
-    this.targetVelSq = 0.0;
-    this.minVelSq = 0.0;
-    this.minVel = 0.0;
-    
     this.GRAY_TRAILS = 0;
     this.COLOR_TRAILS = 1;
     this.RANDOM_TRAILS = 2;
@@ -86,14 +63,6 @@ class Swarm{
     this.COLOR_SCHIZO = 5;
     this.NUM_SCHEMES = 3;
     
-    this.bugs = []; // As bug
-    this.targets = []; // As bug
-    this.allbugs = []; // As bug
-    this.head = 0;
-    this.tail = 0;
-    this.colorScheme = 0;
-    this.changeProb = 0.0;
-    
     this.grayIndex = [];
     this.redIndex= []; // as Long
     this.blueIndex= []; // as Long
@@ -101,21 +70,8 @@ class Swarm{
     this.redSIndex= []; // as Long
     this.blueSIndex= []; // as Long
     this.randomIndex= []; // as Long
-    this.numColors = 0;
-    this.numRandomColors = 0;
-    
-    this.good1 = bugParams;
-    
-    this.dt               = 0.0;
-    this.targetVel        = 0.0;
-    this.targetAcc        = 0.0;
-    this.maxVel           = 0.0;
-    this.maxAcc           = 0.0;
-    this.noise            = 0.0;
-    this.minVelMultiplier = 0.0;
     
     this.callDepth = 0;
-    
     
     this.good1 = bugParams;
     this.Continue = true;
@@ -139,9 +95,6 @@ class Swarm{
     this.goodParams = [];
     this.goodParams.push(this.good1);
     
-    this.head = 0;
-    this.tail = 0;
-    this.colorScheme = -1;
     this.changeProb = 0.08;
     
     this.dt = this.good1.dt;
@@ -154,17 +107,6 @@ class Swarm{
     this.noise = this.good1.noise;
     this.minVelMultiplier = 0.5;
     
-    this.grayIndex = Array(this.MAX_TRAIL_LEN).fill(0);
-    this.redIndex = Array(this.MAX_TRAIL_LEN).fill(0);
-    this.blueIndex = Array(this.MAX_TRAIL_LEN).fill(0);
-    this.graySIndex = Array(this.MAX_TRAIL_LEN).fill(0);
-    this.redSIndex = Array(this.MAX_TRAIL_LEN).fill(0);
-    this.blueSIndex = Array(this.MAX_TRAIL_LEN).fill(0);
-    this.randomIndex = Array(this.MAX_TRAIL_LEN).fill(0);
-    
-    this.nbugs = -1;
-    this.ntargets = -1;
-    this.trailLen = -1;
   }
   
   
@@ -219,55 +161,12 @@ class Swarm{
   
   
   /**
-   * computeColorIndices
-   *
-   */
-  computeColorIndices(){
-    /* note: colors are used in *reverse* order! */
-    let redSchizoLength = this.trailLen / 4;
-    let blueSchizoLength = this.trailLen / 2;
-    
-    for(let i = this.trailLen - 1; i >= 0; i--){
-      let schizo = Math.floor((i * 16 / this.trailLen) + 0.5);
-      //grayscale
-      this.grayIndex[i] = 4 + i;
-      if (this.grayIndex[i] > 19) { this.grayIndex[i] = 19; }
-      //red
-      this.redIndex[i] = 20 + schizo;
-      if (this.redIndex[i] > 35) { this.redIndex[i] = 35}
-      //blue
-      this.blueIndex[i] = 36 + schizo;
-      if (this.blueIndex[i] > 51) { this.blueIndex[i] = 51}
-      //grayschizo
-      this.graySIndex[i] = 4 + schizo;
-      //red schizo
-      this.redSIndex[i] = 20 + schizo;
-      if (this.redSIndex[i] > 35) { this.redSIndex[i] = 35}
-      //blue schizo
-      this.blueSIndex[i] = 36 + 16 * ((this.trailLen - 1 - i) % blueSchizoLength) / (blueSchizoLength - 1) + 0.5;
-      if (this.blueSIndex[i] > 51) { this.blueSIndex[i] = 51; }
-      //random
-      this.randomIndex[i] = 52 + Math.random() * this.numRandomColors;
-      //debug.Print i
-    }
-  }
-  
-  
-  
-  /**
    * drawBugs
    *
    */
-  drawBugs(params){
-    let colour = null;
-    try{
-      colour = this.colors[params.tColorIdx[params.nc - params.ci0]].HtmlCode;
-    }
-    catch(e){
-      console.warn('Colour failed to be looked up');
-    }
-    console.debug('HARDCODE: color of bugs. Should be drawn segment by segment');
-    colour = '#00FF00';
+  drawBugs(scheme){
+    let colours = this.trails[scheme];
+    let colour = colours[0].HtmlCode;
     
     let paths = Array.from(this.win.querySelectorAll('path'));
     while (paths.length > this.allbugs.length){
@@ -328,11 +227,6 @@ class Swarm{
    *
    */
   initBugs(){
-    let i = 0;
-    
-    this.head = 0;
-    this.tail = 0;
-    
     //*** Test Values ***
     //*
     //this.nbugs = 2
@@ -341,35 +235,21 @@ class Swarm{
     //*
     //*** Test Values ***
     
-    if (this.ntargets < 0) {
-      this.ntargets = (0.25 + Math.rand(0.75) * Math.rand(1)) * (this.MAX_TARGETS - 1) + 1;
-      this.ntargets = Math.floor(this.ntargets);
-    }
-    if (this.nbugs < 0) {
-      this.nbugs = (0.25 + Math.rand(0.75) * Math.rand(1)) * (this.MAX_BUGS - 1) + 1;
-      this.nbugs = Math.floor(this.nbugs);
-    }
-    if (this.trailLen < 0) {
-      //this.trailLen = (1 - Math.rand(0.6) * Math.rand(1)) * MAX_TRAIL_LEN
-      this.trailLen = this.Params.trailLen.val;
-      this.trailLen = Math.floor(this.trailLen);
-    }
+    let ntargets = 1 + (Math.random() * 0.75 + 0.25) * (this.MAX_TARGETS-1);
+    ntargets = Math.floor(ntargets);
+    if (ntargets > this.MAX_TARGETS) { ntargets = this.MAX_TARGETS}
     
-    if (this.nbugs > this.MAX_BUGS) { this.nbugs = this.MAX_BUGS}
-    if (this.ntargets > this.MAX_TARGETS) { this.ntargets = this.MAX_TARGETS}
-    if (this.trailLen > this.MAX_TRAIL_LEN) { this.trailLen = this.MAX_TRAIL_LEN}
-    
-    let totbugs = this.ntargets + this.nbugs;
+    let nbugs = 1 + (Math.random() * 0.75 + 0.25) * (this.MAX_BUGS-1);
+    nbugs = Math.floor(nbugs);
+    if (nbugs > this.MAX_BUGS) { nbugs = this.MAX_BUGS}
     
     this.allbugs = [];
-    this.bugs = [];
-    this.targets = [];
-    for(i = 0; i< totbugs; i++){
+    for(let i=ntargets+nbugs; i>=0; i--){
       let b = new sBug(this);
       this.allbugs.push(b);
     }
-    this.bugs = this.allbugs.slice(0,this.nbugs);
-    this.targets = this.allbugs.slice(this.nbugs);
+    this.bugs = this.allbugs.slice(0,nbugs);
+    this.targets = this.allbugs.slice(nbugs);
     
     this.pickNewTargets();
   }
@@ -377,71 +257,46 @@ class Swarm{
   
   
   /**
-   * InitCMap
+   * initColourMap
    * 
    */
-  initCMap(){
-    let i = 0;
-    let n = 0;
-    let temp = 0;
+  initColourMap(){
+    //this.trailLen = (1 - Math.rand(0.6) * Math.rand(1)) * MAX_TRAIL_LEN
+    this.trailLen = this.Params.trailLen.val;
+    this.trailLen = Math.floor(this.trailLen);
+    if (this.trailLen > this.MAX_TRAIL_LEN) { this.trailLen = this.MAX_TRAIL_LEN}
     
-    /* color 0 is black */
-    this.colors[n] = new RGB(0, 0, 0); n++;
-    
-    /* color 1 is red */
-    this.colors[n] = new RGB(255, 0, 0); n++;
-    
-    /* color 2 is green */
-    this.colors[n] = new RGB(0, 255, 0); n++;
-    
-    /* color 3 is blue */
-    this.colors[n] = new RGB(0, 0, 255); n++;
-    
-    /* start greyscale colors at 4; 16 levels */
-    for( i = 0; i< 16; i++){
-      temp = i * 16;
-      if (temp > 255) {
-        temp = 255;
-      } // if
-      temp = 255 - temp;
-      this.colors[n] = new RGB(temp, temp, temp); n++;
-    }
-    
-    /* start red fade at 20; 16 levels */
-    for(i = 0; i < 16; i++){
-      temp = i * 16;
-      if (temp > 255) {
-        temp = 255;
-      } // if
-      this.colors[n] = new RGB(255 - temp, 255 - ((i / 16 + 0.001) ^ 0.3) * 255, this.colors[n] = 65 - temp / 4);
-      n++;
-    }
-    
-    /* start blue fade at 36; 16 levels */
-    for(i = 0; i < 16; i++){
-      temp = i * 16;
-      if (temp > 255) {
-        temp = 255;
-      } // if
-      this.colors[n] = new RGB(miscMath.WrapByte(32 - temp), miscMath.WrapByte(180 - ((i / 16 + 0.001) ^ 0.3) * 180), miscMath.WrapByte(255 - temp));
-      n = n + 1;
-    }
-    
-    /* random colors start at 52 */
-    this.numRandomColors = this.MAX_TRAIL_LEN;
-    
-    this.colors[n] = new RGB(miscMath.WrapByte(Math.random() * 255), miscMath.WrapByte(Math.rand() & 255), miscMath.WrapByte(this.colors[n - 2] / 2 + this.colors[n - 3] / 2));
-    n = n + 1;
-    
-    for(i = 0; i < this.numRandomColors; i++){
-      this.colors[n] = new RGB(miscMath.WrapByte((this.colors[n-3] + (Math.rand() & 31) - 16) & 255), miscMath.WrapByte((this.colors[n-3] + (Math.rand & 31) - 16) & 255), this.colors[n] == miscMath.WrapByte(this.colors[n-2] / (i + 2) + this.colors[n-3] / (i + 2)));
-      n = n + 1;
-    }
-    
-    this.numColors = n;
-    
-  }
 
+    this.trails = {
+        gray : [],
+        red : [],
+        green : [],
+        blue : [],
+        graySchizo : [],
+        redSchizo : [],
+        greenSchizo : [],
+        blueSchizo : [],
+        random : [],
+      };
+    for(let i = this.trailLen; i >= 0; i--){
+      let opacity = i/this.trailLen;
+      this.trails.gray .push(new RGB(255, 255, 255, opacity));
+      this.trails.red  .push(new RGB(255,   0,   0, opacity));
+      this.trails.green.push(new RGB(  0, 255,   0, opacity));
+      this.trails.blue .push(new RGB(  0,   0, 255, opacity));
+      
+      this.trails.graySchizo .push(new RGB(255, 255, 255, Math.random()));
+      this.trails.redSchizo  .push(new RGB(255,   0,   0, Math.random()));
+      this.trails.greenSchizo.push(new RGB(  0, 255,   0, Math.random()));
+      this.trails.blueSchizo .push(new RGB(  0,   0, 255, Math.random()));
+      
+      let red   = this.trails.red  [Math.floor(this.trails.red  .length * Math.random())].opacity;
+      let green = this.trails.green[Math.floor(this.trails.green.length * Math.random())].opacity;
+      let blue  = this.trails.blue [Math.floor(this.trails.blue .length * Math.random())].opacity;
+      this.trails.random.push(new RGB(red * 256, green * 256, blue * 256));
+    }
+  }
+  
   
   
   /**
@@ -449,7 +304,7 @@ class Swarm{
    *
    */
   initGraphics(){
-    this.initCMap();
+    this.initColourMap();
     
     
     this.xsize = this.win.clientWidth;
@@ -458,11 +313,15 @@ class Swarm{
     this.xc = this.xsize / 2;
     this.yc = this.ysize / 2;
     
-    if (this.colorScheme < 0) {
-      this.colorScheme = Math.floor(Math.rand(this.NUM_SCHEMES - 1));
-    }
+    this.colorScheme = this.RandomColorScheme;
     
     return true;
+  }
+  
+  get RandomColorScheme(){
+    let trails = Object.keys(this.trails);
+    trails = trails[Math.floor(trails.length * Math.random())];
+    return trails;
   }
   
   
@@ -474,44 +333,37 @@ class Swarm{
    * a predator.
    */
   mutateBug(which){
-    if (which == 0) {
+    if (which % 2) {
       /* turn bug into target */
-      if (this.ntargets < this.MAX_TARGETS - 1 && this.nbugs > this.ntargets) {
-        let i = Math.rand(this.nbugs - 1);
-        this.targets[this.ntargets] = this.bugs[i];
-        this.bugs[i] = this.bugs[this.nbugs-1];
-        this.targets[this.ntargets].closest = null;
-        this.nbugs--;
-        this.ntargets--;
+      // don't do it if we have too many targets, or not enough bugs
+      if (this.targets.length < this.MAX_TARGETS-1 && this.bugs.length > this.targets.length) {
+        // select a bug at random and pull it out of its list
+        let i = Math.floor(Math.random * this.bugs.length);
+        let b = this.bugs.splice(i,1).pop();
+        this.targets.push(b);
+        // make it a target
+        b.closest = null;
         
-        for(i = 0; i < Math.floor(this.nbugs / this.ntargets); i++){
-          //debug.Print (i % nbugs)
-          this.bugs[i%this.nbugs].closest = this.targets[this.ntargets-1];
+        // grab a bunch of bugs and point them
+        // at the new target
+        let inc = Math.floor(this.bugs.length / this.targets.length);
+        for(i = 0; i<this.bugs.length; i += inc){
+          this.bugs[i].closest = b;
         }
       }
     }
     else{
       /* turn target into bug */
-      if (this.ntargets > 2 && this.nbugs < this.MAX_BUGS - 1) {
+      if (this.targets.length > 2 && this.bugs.length < this.MAX_BUGS-1) {
         /* pick a target */
-        let i = Math.random() * (this.ntargets - 1);
+        let i = Math.floor(Math.random() * this.targets.length);
         
         /* copy state into a new bug */
-        this.bugs[this.nbugs] = this.targets[i];
-        this.targets[i] = this.targets[this.ntargets-1];
-        this.targets[this.ntargets-1] = null;
-        this.ntargets = this.ntargets - 1;
-        this.nbugs = this.nbugs + 1;
+        let b = this.targets.splice(i,1).pop();
+        this.bugs.push(b);
         
         /* pick a target for the new bug */
-        this.bugs[this.nbugs-1].closest = this.targets[Math.floor(Math.random() * (this.ntargets - 1))];
-        
-        for(let j = 0; j < this.nbugs; j++){
-          if (this.bugs[j].closest == this.bugs[this.nbugs-1]) {
-            this.bugs[j].closest = this.targets[Math.random() * (this.ntargets - 1)];
-          }
-        }
-        
+        b.closest = this.targets[0];
       }
     }
   }
@@ -527,7 +379,7 @@ class Swarm{
    */
   mutateParam(Param){
     this.mutateRate = 0.25;
-    this.Param = this.Param * (1 - this.mutateRate + Math.rand(this.mutateRate * 2));
+    this[Param] *= (1 - this.mutateRate + Math.rand(this.mutateRate * 2));
   }
   
   
@@ -560,52 +412,40 @@ class Swarm{
     if (this.callDepth > 10) return;
     this.callDepth = (this.callDepth || 0) + 1;
     
-    let whichcase = Math.random() * 11;
-    switch(whichcase){
-      case 0:    /* acceleration */
-        this.mutateParam(this.maxAcc);
-        break;
-      case 1:    /* target acceleration */
-        this.mutateParam(this.targetAcc);
-        break;
-      case 2:    /* velocity */
-        this.mutateParam(this.maxVel);
-        break;
-      case 3:    /* target velocity */
-        this.mutateParam(this.targetVel);
-        break;
-      case 4:    /* noise */
-        this.mutateParam(this.noise);
-        break;
-      case 5:    /* minVelMultiplier */
-        this.mutateParam(this.minVelMultiplier);
-        break;
-      case 6:    /* target to bug */
-        this.mutateBug(1);
-        break;
-      case 7:    /* target to bug */
-        this.mutateBug(1);
-        break;
-      case 8:    /* bug to target */
-        this.mutateBug(0);
-        break;
-      case 9:    /* bug to target */
-        this.mutateBug(0);
-        break;
-      case 10:   /* color scheme */
-        this.colorScheme = Math.rand(this.NUM_SCHEMES - 1);
-        if (this.colorScheme == this.RANDOM_SCHIZO || this.colorScheme == this.COLOR_SCHIZO) {
-          this.colorScheme = Math.rand(this.NUM_SCHEMES - 1);
-        } // if
-        break;
-        
-      default:
-        this.randomSmallChange();
-        this.randomSmallChange();
-        this.randomSmallChange();
-        this.randomSmallChange();
-        break;
-    }
+    let that = this;
+    let changes = [
+        /* acceleration */
+        function(){ that.mutateParam('maxAcc'); },
+        /* target acceleration */
+        function(){ that.mutateParam('targetAcc'); },
+        /* velocity */
+        function(){ that.mutateParam('maxVel'); },
+        /* target velocity */
+        function(){ that.mutateParam('targetVel'); },
+        /* noise */
+        function(){ that.mutateParam('noise'); },
+        /* minVelMultiplier */
+        function(){ that.mutateParam('minVelMultiplier'); },
+        /* target to bug */
+        function(){ that.mutateBug(1); },
+        /* target to bug */
+        function(){that.mutateBug(1); },
+        /* bug to target */
+        function(){ that.mutateBug(0); },
+        /* bug to target */
+        function(){ that.mutateBug(0); },
+        /* color scheme */
+        function(){ that.colorScheme = that.RandomColorScheme; },
+        /* default */
+        function(){
+          that.randomSmallChange();
+          that.randomSmallChange();
+          that.randomSmallChange();
+          that.randomSmallChange();
+        }
+      ];
+    let change = changes[Math.floor(Math.random() * changes.length)];
+    change();
     
     if (this.minVelMultiplier < 0.3) {
       this.minVelMultiplier = 0.3;
@@ -635,16 +475,13 @@ class Swarm{
    *
    */
   randomBigChange(){
+    if (this.callDepth > 3) return;
+    this.callDepth = this.callDepth + 1;
+    
     let whichcase = 0;
     let temp = 0;
     
     whichcase = Math.floor(Math.random() * 4);
-    
-    this.callDepth = this.callDepth + 1;
-    if (this.callDepth > 3) {
-      this.callDepth = this.callDepth - 1;
-      return;
-    } // if
     
     switch(whichcase){
       case 0:
@@ -652,7 +489,7 @@ class Swarm{
         temp = (Math.random() * (this.MAX_TRAIL_LEN - 25)) + 25;
         this.clearBugs();
         this.trailLen = temp;
-        this.computeColorIndices();
+        this.initColourMap();
         this.initBugs();
         break;
       case 1:
@@ -705,7 +542,8 @@ class Swarm{
     
     this.computeConstants();
     this.initBugs();
-    this.computeColorIndices();
+    this.initColourMap();
+    
     
     if (this.changeProb > 0) {
       for(let i = (Math.random() * 5) + 5 ; i >= 0; i--){
@@ -732,8 +570,7 @@ class Swarm{
     
     let sTime = Date.now();
     this.updateState();
-    let colorParams = this.updateColorIndex(this.colorScheme);
-    this.drawBugs(colorParams);
+    this.drawBugs(this.colorScheme);
     
     let change = Math.random();
     if (change < this.changeProb * 0.3) {
@@ -780,7 +617,6 @@ class Swarm{
         if (this.trailLen < 10) {
           this.trailLen = 10;
         }
-        this.computeColorIndices();
         this.initBugs();
       }
       
@@ -890,64 +726,6 @@ class Swarm{
       }
     });
     
-  }
-  
-  
-  
-  /**
-   * updateColorIndex
-   *
-   */
-  updateColorIndex(scheme){
-    let rtn = {
-      tColorIdx:[],
-      tci0:0,
-      tnc:this.trailLen,
-      colorIdx:[],
-      ci0:0,
-      nc:this.trailLen,
-    };
-
-    switch(scheme){
-      case this.COLOR_TRAILS:
-        rtn.tColorIdx = this.redIndex;
-        rtn.tci0 = 0;
-        rtn.colorIdx = this.blueIndex;
-        rtn.ci0 = 0;
-        break;
-      case this.GRAY_SCHIZO:
-        rtn.tColorIdx = this.graySIndex;
-        rtn.tci0 = this.head;
-        rtn.colorIdx = this.graySIndex;
-        rtn.ci0 = this.head;
-        break;
-      case this.COLOR_SCHIZO:
-        rtn.tColorIdx = this.redSIndex;
-        rtn.tci0 = this.head;
-        rtn.colorIdx = this.blueSIndex;
-        rtn.ci0 = this.head;
-        break;
-      case this.GRAY_TRAILS:
-        rtn.tColorIdx = this.grayIndex;
-        rtn.tci0 = 0;
-        rtn.colorIdx = this.grayIndex;
-        rtn.ci0 = 0;
-        break;
-      case this.RANDOM_TRAILS:
-        rtn.tColorIdx = this.redIndex;
-        rtn.tci0 = 0;
-        rtn.colorIdx = this.randomIndex;
-        rtn.ci0 = 0;
-        break;
-      case this.RANDOM_SCHIZO:
-        rtn.tColorIdx = this.redIndex;
-        rtn.tci0 = this.head;
-        rtn.colorIdx = this.randomIndex;
-        rtn.ci0 = this.head;
-        break;
-    }
-    rtn.scheme = scheme;
-    return rtn;
   }
   
   

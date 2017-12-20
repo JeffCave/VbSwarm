@@ -50,10 +50,21 @@ class ResBitmap{
 
 
 class RGB{
-  constructor(red,green,blue){
-    this.red = red;
-    this.green = green;
-    this.blue = blue;
+  constructor(red,green,blue,opacity){
+    this.red = Math.floor(red);
+    this.green = Math.floor(green);
+    this.blue = Math.floor(blue);
+    
+    this.opacity = 1;
+    if(typeof opacity !== 'undefined'){
+      this.opacity = opacity;
+    }
+    if(this.opacity > 1){
+      this.opacity = 1;
+    }
+    if(this.opacity < 0){
+      this.opacity = 0;
+    }
   }
   
   get HexCode(){
@@ -65,6 +76,18 @@ class RGB{
   }
   
   get HtmlCode(){
-    return "#" + this.HexCode + ';';
+    //return "#" + this.HexCode + ';';
+    return "rgba("+[this.red,this.green,this.blue,this.opacity].join(',')+")";
   }
+  
+  get numeric(){
+    let num = 0;
+    num += this.red;
+    num = num << 8;
+    num += this.green; 
+    num *= 256;
+    num += this.blue;
+    return num;
+  }
+  
 }
