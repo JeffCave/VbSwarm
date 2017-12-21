@@ -1,10 +1,5 @@
 /******************************************************************************
- * This code Modified from its original C source by Jeff Cave (k@vius.ca)
- *
- * Included below is the original Copyright notice and licencing. I'm not a
- * lawyer. So I am not going to even try to apply changes to it. The copyright
- * notice below is the copyright on the code associated with this document.
- *
+ * This code Modified from its original C source by Jeff Cave
  *****************************************************************************/
 /*
  * Copyright (c) 2000 by Chris Leger (xrayjones@users.sourceforge.net)
@@ -49,28 +44,12 @@ from the X Consortium.
 */
 'use strict';
 
-/* global sBug, global miscMath, global bugParams, global RGB */
+/* global sBug, global bugParams, global RGB */
 
 class Swarm{
   
   
   constructor(canvas){
-    this.GRAY_TRAILS = 0;
-    this.COLOR_TRAILS = 1;
-    this.RANDOM_TRAILS = 2;
-    this.GRAY_SCHIZO = 3;
-    this.RANDOM_SCHIZO = 4;
-    this.COLOR_SCHIZO = 5;
-    this.NUM_SCHEMES = 3;
-    
-    this.grayIndex = [];
-    this.redIndex= []; // as Long
-    this.blueIndex= []; // as Long
-    this.graySIndex= []; // as Long
-    this.redSIndex= []; // as Long
-    this.blueSIndex= []; // as Long
-    this.randomIndex= []; // as Long
-    
     this.callDepth = 0;
     
     this.good1 = bugParams;
@@ -137,7 +116,7 @@ class Swarm{
    */
   clearBugs(){
     Array
-      .from(this.win.querySelectorAll('path'))
+      .from(this.win.querySelectorAll('*'))
       .forEach(function(path){
         path.parentNode.removeChild(path);
       });
@@ -166,8 +145,7 @@ class Swarm{
    */
   drawBugs(scheme){
     let colours = this.trails[scheme];
-    let colour = colours[0];
-    
+
     let paths = Array.from(this.win.querySelectorAll('g'));
     while (paths.length > this.allbugs.length){
       let path = paths.pop();
@@ -210,9 +188,9 @@ class Swarm{
         
         b.hist
           .forEach(function(seg,i){
-            colour = colours[i%colours.length];
+            let colour = colours[i%colours.length];
             if(b.isPrey){
-              colour = new RGB(1,1,1,1);
+              colour = new RGB(255,255,255,1);
             }
             line = lines[i];
             line.setAttribute('d',[
@@ -278,7 +256,9 @@ class Swarm{
     //this.trailLen = (1 - (Math.random() * 0.6) * Math.random()) * MAX_TRAIL_LEN
     this.trailLen = this.Params.trailLen.val;
     this.trailLen = Math.floor(this.trailLen);
-    if (this.trailLen > this.MAX_TRAIL_LEN) { this.trailLen = this.MAX_TRAIL_LEN}
+    if (this.trailLen > this.MAX_TRAIL_LEN) { 
+      this.trailLen = this.MAX_TRAIL_LEN; 
+    }
     
     
     this.trails = {
@@ -362,7 +342,7 @@ class Swarm{
    * a predator.
    */
   mutateBug(which){
-    if (which % 2) {
+    if (which % 2 === 0) {
       /* turn bug into target */
       // don't do it if we have too many targets, or not enough bugs
       if (this.targets.length < this.MAX_TARGETS-1 && this.bugs.length > this.targets.length) {
@@ -547,7 +527,7 @@ class Swarm{
         //updateState //will fix bounds
     }
     
-    this.callDepth = this.callDepth - 1;
+    this.callDepth--;
   }
   
   
@@ -661,98 +641,12 @@ class Swarm{
    */
   updateState(){
     this.bugs.forEach(function(bug,j){
-      // based on the x/y coordinates of the bug, and it's closest target, use
-      // pythagorean theorum to determine its distance
-      let x = bug.closest.pos[0] - bug.pos[0];
-      let y = bug.closest.pos[1] - bug.pos[1];
-      let dist = Math.pow(x,2) + Math.pow(y,2);
-      bug.swarm.targets.forEach(function(targ,i){
-        // if this is already the one marked closest, there is nothing to check
-        if (targ === bug.closest) return;
-        
-        // if this item is closer than the one we think is closest, mark this
-        // one as the closest
-        let x = targ.pos[0] - bug.pos[0];
-        let y = targ.pos[1] - bug.pos[1];
-        let newDist = Math.pow(x,2) + Math.pow(y,2);
-        
-        // our creature does not want to give up the chase, it will stay 
-        // focussed on its prey. However if another prey animal is *really* 
-        // close (say half the distance) it breaks off its current chase and 
-        // goes for the one even closer
-        if (newDist * 2 < dist) {
-          bug.closest = targ;
-          dist = newDist;
-        }
-        
+        bug.spotNewPrey(bug.swarm.targets);
       });
-    });
     
     /* update target state */
-    this.allbugs.forEach(function(b,i){
-      let newVel = 0;
-      let velSq = 0;
-      let maxVel = 0;
-      let acc = 0;
-      if(b.isPrey){
-        velSq = b.swarm.targetVelSq;
-        maxVel = b.swarm.targetVel;
-        acc = b.swarm.targetAcc;
-        newVel = Math.random() * Math.PI * 2;
-      }
-      else{
-        velSq = b.swarm.maxVelSq;
-        maxVel = b.swarm.maxVel;
-        acc = b.swarm.maxAcc;
-        newVel = Math.atan(
-              b.closest.pos[1] - b.pos[1] + Math.random() * b.swarm.noise - (b.swarm.noise / 2)
-            , b.closest.pos[0] - b.pos[0] + Math.random() * b.swarm.noise - (b.swarm.noise / 2)
-          );
-      }
-      let x = acc * Math.cos(newVel);
-      let y = acc * Math.sin(newVel);
-      
-      b.vel[0] += x * b.swarm.dt;
-      b.vel[1] += y * b.swarm.dt;
-      
-      /* check velocity */
-      newVel = Math.pow(b.vel[0],2) + Math.pow(b.vel[1],2);
-      if (newVel > velSq) {
-        newVel = maxVel / Math.pow(newVel,0.5);
-        /* save old vel for acc computation */
-        x = b.vel[0];
-        y = b.vel[1];
-        
-        /* compute new velocity */
-        b.vel[0] *= newVel;
-        b.vel[1] *= newVel;
-        
-        /* update acceleration */
-        x = (b.vel[0] - x) * b.swarm.dtInv;
-        y = (b.vel[1] - y) * b.swarm.dtInv;
-      }
-      
-      /* update position */
-      b.pos[0] += (b.vel[0] * b.swarm.dt + x * b.swarm.halfDtSq);
-      b.pos[1] += (b.vel[1] * b.swarm.dt + y * b.swarm.halfDtSq);
-      
-      // prey is not allowed to leave the game board
-      if(b.isPrey){
-        /* check limits on targets */
-        if (b.pos[0] < 0 || b.pos[0] >= b.swarm.xsize) {
-          /* bounce */
-          b.vel[0] *= -1;
-        }
-        if (b.pos[1] < 0 || b.pos[1] >= b.swarm.ysize) {
-          /* bounce */
-          b.vel[1] *= -1;
-        }
-      }
-      
-      b.hist.unshift(JSON.clone(b.pos));
-      if(b.hist.length > b.swarm.trailLen) {
-        b.hist.pop();
-      }
+    this.allbugs.forEach(function(b){
+      b.updateDirection();
     });
     
   }
