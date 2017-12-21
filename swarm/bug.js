@@ -24,9 +24,10 @@ const bugParams = {
 
 class sBug{
 
-  /*** constructor ************************************************************
+  /**
+   * constructor
    *
-   ***************************************************************************/
+   */
   constructor(swarm){
     this.pPos = [0,0];
     this.pVel = [0,0];
@@ -37,8 +38,8 @@ class sBug{
     this.pos[0] = Math.random();
     this.pos[1] = Math.random();
     
-    this.vel[0] = Math.rand(this.swarm.targetVel / 2);
-    this.vel[1] = Math.rand(this.swarm.targetVel / 2);
+    this.vel[0] = Math.random() * this.swarm.targetVel / 2;
+    this.vel[1] = Math.random() * this.swarm.targetVel / 2;
     
     this.hist.push(JSON.clone(this.pos));
     

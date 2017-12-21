@@ -150,12 +150,12 @@ class Swarm{
    *
    */
   computeConstants(){
-    this.halfDtSq = Math.sq(this.dt) * 0.5;
+    this.halfDtSq = Math.pow(this.dt,2) * 0.5;
     this.dtInv = 1 / this.dt;
-    this.targetVelSq = Math.sq(this.targetVel);
-    this.maxVelSq = Math.sq(this.maxVel);
+    this.targetVelSq = Math.pow(this.targetVel,2);
+    this.maxVelSq = Math.pow(this.maxVel,2);
     this.minVel = this.maxVel * this.minVelMultiplier;
-    this.minVelSq = Math.sq(this.minVel);
+    this.minVelSq = Math.pow(this.minVel,2);
   }
   
   
@@ -166,15 +166,16 @@ class Swarm{
    */
   drawBugs(scheme){
     let colours = this.trails[scheme];
-    let colour = colours[0].HtmlCode;
+    let colour = colours[0];
     
-    let paths = Array.from(this.win.querySelectorAll('path'));
+    let paths = Array.from(this.win.querySelectorAll('g'));
     while (paths.length > this.allbugs.length){
       let path = paths.pop();
-      this.win.removeChild(path);
+      //this.win.removeChild(path);
+      path.parentNode.removeChild(path);
     }
     while (paths.length < this.allbugs.length){
-      let path = document.createElementNS('http://www.w3.org/2000/svg',"path");
+      let path = document.createElementNS('http://www.w3.org/2000/svg',"g");
       paths.push(path);
       this.win.appendChild(path);
     }
@@ -190,34 +191,47 @@ class Swarm{
             'hist':b.hist,
           };
       })
-      .map(function(b){
-        let path = "M " + b.hist
-          //.filter(function(seg){
-          //  return !(seg[0] === null || seg[1] === null);
-          //})
-          .map(function(seg){
-            seg = [
-                Math.floor(universe.height * seg[0]),
-                Math.floor(universe.width * seg[1])
-              ];
-            seg = seg.join(',');
-            return seg;
-          })
-          .join(' L ')
-          ;
-        return {
-            path:path,
-            isPrey:b.isPrey,
-          };
-      })
-      .forEach(function(b,i) {
+      .forEach(function(b,i){
+        let last = b.hist[0];
         let path = paths[i];
-        path.setAttribute('d',b.path);
-        path.setAttribute('stroke',b.isPrey?'#FFFFFF':colour);
-        path.setAttribute('fill','none');
-        path.setAttribute('stroke-linecap',"round");
-      });
-      
+        let lines = Array.from(path.querySelectorAll('path'));
+        let line = null;
+        while (lines.length < b.hist.length){
+          line = document.createElementNS('http://www.w3.org/2000/svg',"path");
+          line.setAttribute('fill','none');
+          line.setAttribute('stroke-width',2);
+          lines.push(line);
+          path.appendChild(line);
+        }
+        while (lines.length > b.hist.length){
+          line = lines.pop();
+          line.parentNode.removeChild(line);
+        }
+        
+        b.hist
+          .forEach(function(seg,i){
+            colour = colours[i%colours.length];
+            if(b.isPrey){
+              colour = new RGB(1,1,1,1);
+            }
+            line = lines[i];
+            line.setAttribute('d',[
+                "M",
+                Math.floor(universe.height * last[0]),
+                ",",
+                Math.floor(universe.width * last[1]),
+                "L",
+                Math.floor(universe.height * seg[0]),
+                ",",
+                Math.floor(universe.width * seg[1]),
+              ].join(' '));
+            line.setAttribute('stroke',colour.HtmlCode);
+            line.setAttribute('opacity',colour.opacity);
+            last = seg;
+          })
+          ;
+      })
+      ;
   }
   
   
@@ -261,7 +275,7 @@ class Swarm{
    * 
    */
   initColourMap(){
-    //this.trailLen = (1 - Math.rand(0.6) * Math.rand(1)) * MAX_TRAIL_LEN
+    //this.trailLen = (1 - (Math.random() * 0.6) * Math.random()) * MAX_TRAIL_LEN
     this.trailLen = this.Params.trailLen.val;
     this.trailLen = Math.floor(this.trailLen);
     if (this.trailLen > this.MAX_TRAIL_LEN) { this.trailLen = this.MAX_TRAIL_LEN}
@@ -276,8 +290,18 @@ class Swarm{
         redSchizo : [],
         greenSchizo : [],
         blueSchizo : [],
+        
         random : [],
       };
+    
+    // get all the keys except 'random' we will use them to 
+    // generate the random value
+    let nonrand = Object
+      .keys(this.trails)
+      .filter(function(d){
+        return d !== "random";
+      });
+    
     for(let i = this.trailLen; i >= 0; i--){
       let opacity = i/this.trailLen;
       this.trails.gray .push(new RGB(255, 255, 255, opacity));
@@ -290,10 +314,15 @@ class Swarm{
       this.trails.greenSchizo.push(new RGB(  0, 255,   0, Math.random()));
       this.trails.blueSchizo .push(new RGB(  0,   0, 255, Math.random()));
       
-      let red   = this.trails.red  [Math.floor(this.trails.red  .length * Math.random())].opacity;
-      let green = this.trails.green[Math.floor(this.trails.green.length * Math.random())].opacity;
-      let blue  = this.trails.blue [Math.floor(this.trails.blue .length * Math.random())].opacity;
-      this.trails.random.push(new RGB(red * 256, green * 256, blue * 256));
+      // select one of the previous items at random
+      // this will tend to favour the the earlier created ones
+      // that is on purpose so that the opacity stays brighter
+      let rand = Math.floor(nonrand.length * Math.random());
+      rand = nonrand[rand];
+      rand = this.trails[rand];
+      rand = rand[Math.floor(rand.length * Math.random())];
+      rand = JSON.clone(rand);
+      this.trails.random.push(rand);
     }
   }
   
@@ -379,7 +408,7 @@ class Swarm{
    */
   mutateParam(Param){
     this.mutateRate = 0.25;
-    this[Param] *= (1 - this.mutateRate + Math.rand(this.mutateRate * 2));
+    this[Param] *= (1 - this.mutateRate + Math.random() * this.mutateRate * 2);
   }
   
   
@@ -511,9 +540,9 @@ class Swarm{
         this.pickNewTargets();
         break;
       default:
-        temp = Math.rand(this.ntargets - 1);
-        this.targets[temp].pos[0] = this.targets[temp].pos[0] + (Math.rand(this.maxx / 4) - this.maxx / 8);
-        this.targets[temp].pos[1] = this.targets[temp].pos[1] + (Math.rand(this.maxy / 4) - this.maxy / 8);
+        temp = Math.random() * this.targets.length ;
+        this.targets[temp].pos[0] = this.targets[temp].pos[0] + ((Math.random() * this.maxx / 4) - this.maxx / 8);
+        this.targets[temp].pos[1] = this.targets[temp].pos[1] + ((Math.random() * this.maxy / 4) - this.maxy / 8);
         ///* updateState() will fix bounds */
         //updateState //will fix bounds
     }
@@ -530,7 +559,7 @@ class Swarm{
     
     this.initVar();
     
-    if (w == null) {
+    if (w === null) {
       throw new Error("No Form received to draw on.");
     }
     this.win = null;
@@ -573,7 +602,7 @@ class Swarm{
     this.drawBugs(this.colorScheme);
     
     let change = Math.random();
-    if (change < this.changeProb * 0.3) {
+    if (change < this.changeProb * 0.1) {
       this.randomBigChange();
     }
     else if (change < this.changeProb) {
@@ -669,15 +698,15 @@ class Swarm{
         velSq = b.swarm.targetVelSq;
         maxVel = b.swarm.targetVel;
         acc = b.swarm.targetAcc;
-        newVel = Math.rand(Math.PI * 2);
+        newVel = Math.random() * Math.PI * 2;
       }
       else{
         velSq = b.swarm.maxVelSq;
         maxVel = b.swarm.maxVel;
         acc = b.swarm.maxAcc;
         newVel = Math.atan(
-              b.closest.pos[1] - b.pos[1] + Math.rand(b.swarm.noise) - (b.swarm.noise / 2)
-            , b.closest.pos[0] - b.pos[0] + Math.rand(b.swarm.noise) - (b.swarm.noise / 2)
+              b.closest.pos[1] - b.pos[1] + Math.random() * b.swarm.noise - (b.swarm.noise / 2)
+            , b.closest.pos[0] - b.pos[0] + Math.random() * b.swarm.noise - (b.swarm.noise / 2)
           );
       }
       let x = acc * Math.cos(newVel);
@@ -736,7 +765,7 @@ class Swarm{
    */
   CreateParams(){
       this.Params = {};
-      this.Params["cls"] = {type:'int',min:0,max:1,val:1};
+      this.Params["cls"] = {type:'INT',min:0,max:1,val:1};
       this.Params["fps"] = {type:'FLT',min:16,max:150,val:150};
       this.Params["trailLen"] = {type:'INT', min:5, max:60, val:40};
       this.Params["Bugs"]={type:'INT',min: 2,max: 100,val: 50};
